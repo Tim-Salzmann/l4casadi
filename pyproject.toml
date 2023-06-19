@@ -1,0 +1,35 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "scikit-build>=0.13",
+    "cmake>=3.18",
+    "ninja",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "l4casadi"
+version = "0.0.1"
+authors = [
+  { name="Tim Salzmann", email="Tim.Salzmann@tum.de" },
+]
+description = "Integrate PyTorch Model in CasADi graphs."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C++",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "torch==2.0",
+    "casadi>=3.6"
+]
+
+#[project.urls]
+#"Homepage" = "https://github.com/pypa/sampleproject"
+#"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+[tool.setuptools]
+packages = ["l4casadi", "l4casadi.template_generation"]
