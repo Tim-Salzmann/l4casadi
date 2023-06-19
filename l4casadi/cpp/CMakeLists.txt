@@ -3,7 +3,7 @@ project(L4CasADi)
 
 set(LIBTORCH_OSX_M1 https://github.com/mlverse/libtorch-mac-m1/releases/download/LibTorchOpenMP/libtorch-v2.0.0.zip)
 set(LIBTORCH_OSX https://download.pytorch.org/libtorch/cpu/libtorch-macos-2.0.0.zip)
-set(LIBTORCH_linux https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcpu.zip)
+set(LIBTORCH_linux https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-2.0.0%2Bcpu.zip)
 
 function(download_and_extract url name)
     if (EXISTS ${CMAKE_SOURCE_DIR}/${name})
@@ -33,6 +33,7 @@ endif()
 
 set(CMAKE_PREFIX_PATH libtorch)
 find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 
 add_library(l4casadi SHARED src/l4casadi.cpp include/l4casadi.hpp)

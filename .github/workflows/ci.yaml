@@ -1,0 +1,58 @@
+name: L4CasADi CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run mypy
+      run: |
+        pip install mypy
+        mypy . --ignore-missing-imports
+    - name: Run flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  tests:
+    runs-on: ${{ matrix.runs-on }}
+    needs: [ lint ]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [ ubuntu-20.04, macos-latest]
+
+    name: Tests on ${{ matrix.runs-on }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - name: Install L4CasADi
+      run: |
+        python -m pip install --upgrade pip
+        pip install torch==2.0.0 --index-url https://download.pytorch.org/whl/cpu  # Ensure CPU torch version
+        pip install . -v
+
+    - name: Test with pytest
+      working-directory: ./tests
+      run: |
+        pip install pytest
+        pytest .

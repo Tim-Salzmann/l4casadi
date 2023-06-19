@@ -1,7 +1,8 @@
 import json
 import os
 import pathlib
-from typing import Tuple
+import sys
+from typing import Tuple, Optional
 
 import casadi as cs
 import torch
@@ -19,7 +20,7 @@ class L4CasADi:
 
         self.generation_path = pathlib.Path('./_l4c_generated')
 
-        self._ext_cs_fun = None
+        self._ext_cs_fun: Optional[cs.Function] = None
         self._ready = False
 
     def __call__(self, *args):
@@ -27,13 +28,14 @@ class L4CasADi:
 
     def forward(self, inp: Tuple[cs.MX, cs.SX, cs.DM]):
         if self.has_batch:
-            assert inp.shape[-1] == 1, "For batched PyTorch models only vector inputs are allowed."
-            inp = cs.transpose(inp)
+            if not inp.shape[-1] == 1:   # type: ignore[attr-defined]
+                raise ValueError("For batched PyTorch models only vector inputs are allowed.")
 
         if not self._ready:
             self.get_ready(inp)
 
-        out = self._ext_cs_fun(inp)
+        out = self._ext_cs_fun(inp)  # type: ignore[misc]
+
         return out
 
     def maybe_make_generation_dir(self):
@@ -41,19 +43,22 @@ class L4CasADi:
             os.makedirs(self.generation_path)
 
     def get_ready(self, inp: Tuple[cs.MX, cs.SX, cs.DM]):
-        rows, cols = inp.shape
+        rows, cols = inp.shape  # type: ignore[attr-defined]
 
         self.maybe_make_generation_dir()
-        self.export_torch_traces(torch.zeros((rows, cols)))
+        self.export_torch_traces(rows, cols)
         self.generate_cpp_function_template(rows, cols)
         self.compile_cs_function()
 
         self._ext_cs_fun = cs.external(f'{self.name}', f'{self.generation_path / self.name}.so')
-
         self._ready = True
 
-    def generate_cpp_function_template(self, rows, cols):
-        rows_out, cols_out = self.model(torch.zeros(rows, cols)).shape[-2:]
+    def generate_cpp_function_template(self, rows: int, cols: int):
+        if self.has_batch:
+            rows_out = self.model(torch.zeros(1, rows)).shape[-1]
+            cols_out = 1
+        else:
+            rows_out, cols_out = self.model(torch.zeros(rows, cols)).shape[-2:]
 
         gen_params = {
             'model_path': self.generation_path.as_posix(),
@@ -61,7 +66,8 @@ class L4CasADi:
             'rows_in': rows,
             'cols_in': cols,
             'rows_out': rows_out,
-            'cols_out': cols_out
+            'cols_out': cols_out,
+            'has_batch': self.has_batch
         }
         with open(self.generation_path / f'{self.name}.json', 'w') as f:
             json.dump(gen_params, f)
@@ -78,23 +84,27 @@ class L4CasADi:
         include_dir = file_dir / 'cpp' / 'include'
 
         # call gcc
+        rpath = f"-rpath '{file_dir}'" if sys.platform == 'darwin' else f" -Wl,-rpath,{file_dir}"
         os_cmd = ("gcc"
                   " -fPIC -shared"
                   f" {self.generation_path / self.name}.cpp"
                   f" -o {self.generation_path / self.name}.so"
-                  f" -I{include_dir} -L{file_dir}" 
-                  f" -rpath '{file_dir}'"
-                  " -ll4casadi -lstdc++ -std=c++17")
+                  f" -I{include_dir} -L{file_dir}"
+                  " -ll4casadi -lstdc++ -std=c++17"
+                  " -D_GLIBCXX_USE_CXX11_ABI=0"
+                  f" {rpath}")
 
         status = os.system(os_cmd)
         if status != 0:
             raise Exception(f'Compilation failed!\n\nAttempted to execute OS command:\n{os_cmd}\n\n')
 
-    def export_torch_traces(self, torch_dummy_inp):
-        d_inp = torch_dummy_inp
+    def export_torch_traces(self, rows: int, cols: int):
+        if self.has_batch:
+            d_inp = torch.zeros((1, rows))
+        else:
+            d_inp = torch.zeros((rows, cols))
+
         out_folder = self.generation_path
         torch.jit.trace(self.model, d_inp).save(out_folder / f'{self.name}_forward.pt')
         torch.jit.trace(make_fx(vmap(jacrev(self.model)))(d_inp), d_inp).save(out_folder / f'{self.name}_jacrev.pt')
 
-    def cs_function(self):
-        return self._ext_cs_fun

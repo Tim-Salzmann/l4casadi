@@ -24,7 +24,8 @@ classifiers = [
 ]
 dependencies = [
     "torch==2.0",
-    "casadi>=3.6"
+    "casadi>=3.6",
+    "pytest"
 ]
 
 #[project.urls]

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <filesystem>
 
+#include <torch/torch.h>
 #include <torch/script.h>
 
 #include "l4casadi.hpp"
@@ -39,17 +40,29 @@ public:
     }
 };
 
-L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, std::string device):
-    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device)} {}
+L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool has_batch, std::string device):
+    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device)},
+    has_batch{has_batch} {}
 
 void L4CasADi::forward(const double* in, int rows, int cols, double* out) {
-    torch::Tensor in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
+    torch::Tensor in_tensor;
+    if (this->has_batch) {
+        in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
+    } else {
+        in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
+    }
+
     torch::Tensor out_tensor = this->pImpl->forward(in_tensor).to(torch::kDouble).contiguous();
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
 }
 
 void L4CasADi::jac(const double* in, int rows, int cols, double* out) {
-    torch::Tensor in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
+    torch::Tensor in_tensor;
+    if (this->has_batch) {
+        in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
+    } else {
+        in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
+    }
     // CasADi expects the return in Fortran order -> Transpose last two dimensions
     torch::Tensor out_tensor = this->pImpl->jac(in_tensor).to(torch::kDouble).transpose(-2, -1).contiguous();
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
