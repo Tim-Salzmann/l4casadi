@@ -14,6 +14,7 @@ public:
     ~L4CasADi();
     void forward(const double*, int, int, double*);
     void jac(const double*, int, int, double*);
+    void hess(const double*, int, int, double*);
 
     // PImpl Idiom
     class L4CasADiImpl;

@@ -2,18 +2,19 @@ import json
 import os
 import pathlib
 import sys
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Callable
 
 import casadi as cs
 import torch
-from torch.func import vmap, jacrev
+from torch.func import vmap, jacrev, hessian
 from torch.fx.experimental.proxy_tensor import make_fx
 
 from l4casadi.template_generation import render_template
 
 
 class L4CasADi:
-    def __init__(self, model: torch.nn.Module, has_batch: bool = False, name: str = 'l4casadi_f'):
+    def __init__(self, model: Callable[[torch.Tensor], torch.Tensor],
+                 has_batch: bool = False, name: str = 'l4casadi_f'):
         self.model = model
         self.name = name
         self.has_batch = has_batch
@@ -58,7 +59,12 @@ class L4CasADi:
             rows_out = self.model(torch.zeros(1, rows)).shape[-1]
             cols_out = 1
         else:
-            rows_out, cols_out = self.model(torch.zeros(rows, cols)).shape[-2:]
+            out_shape = self.model(torch.zeros(rows, cols)).shape
+            if len(out_shape) == 1:
+                rows_out = out_shape[0]
+                cols_out = 1
+            else:
+                rows_out, cols_out = out_shape[-2:]
 
         gen_params = {
             'model_path': self.generation_path.as_posix(),
@@ -105,6 +111,22 @@ class L4CasADi:
             d_inp = torch.zeros((rows, cols))
 
         out_folder = self.generation_path
-        torch.jit.trace(self.model, d_inp).save(out_folder / f'{self.name}_forward.pt')
-        torch.jit.trace(make_fx(vmap(jacrev(self.model)))(d_inp), d_inp).save(out_folder / f'{self.name}_jacrev.pt')
+        torch.jit.trace(self.model, d_inp).save((out_folder / f'{self.name}_forward.pt').as_posix())
+
+        if self.has_batch:
+            torch.jit.trace(
+                make_fx(vmap(jacrev(self.model)))(d_inp), d_inp).save(
+                (out_folder / f'{self.name}_jacrev.pt').as_posix())
+
+            torch.jit.trace(
+                make_fx(vmap(hessian(self.model)))(d_inp), d_inp).save(
+                (out_folder / f'{self.name}_hess.pt').as_posix())
+        else:
+            torch.jit.trace(
+                make_fx(jacrev(self.model))(d_inp), d_inp).save(
+                (out_folder / f'{self.name}_jacrev.pt').as_posix())
+
+            torch.jit.trace(
+                make_fx(hessian(self.model))(d_inp), d_inp).save(
+                (out_folder / f'{self.name}_hess.pt').as_posix())
 

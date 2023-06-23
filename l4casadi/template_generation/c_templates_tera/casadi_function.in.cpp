@@ -46,6 +46,11 @@ CASADI_SYMBOL_EXPORT int jac_{{ name }}(const casadi_real** arg, casadi_real** r
   return 0;
 }
 
+CASADI_SYMBOL_EXPORT int jac_jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
+  l4casadi.hess(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
+  return 0;
+}
+
 /*
 CASADI_SYMBOL_EXPORT int {{ name }}_alloc_mem(void) { return 0; }
 

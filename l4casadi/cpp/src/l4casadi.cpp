@@ -10,6 +10,7 @@ class L4CasADi::L4CasADiImpl
 {
     torch::jit::script::Module forward_model;
     torch::jit::script::Module jac_model;
+    torch::jit::script::Module hess_model;
 
 public:
     L4CasADiImpl(std::string model_path, std::string model_prefix, std::string device) {
@@ -23,6 +24,11 @@ public:
         this->jac_model = torch::jit::load(dir / jac_model_file);
         this->jac_model.eval();
         this->jac_model = torch::jit::optimize_for_inference(this->jac_model);
+
+        std::filesystem::path hess_model_file (model_prefix + "_hess.pt");
+        this->hess_model = torch::jit::load(dir / hess_model_file);
+        this->hess_model.eval();
+        this->hess_model = torch::jit::optimize_for_inference(this->hess_model);
     }
 
     torch::Tensor forward(torch::Tensor input) {
@@ -37,6 +43,13 @@ public:
         std::vector<torch::jit::IValue> inputs;
         inputs.push_back(input);
         return this->jac_model.forward(inputs).toTensor();
+    }
+
+    torch::Tensor hess(torch::Tensor input) {
+        c10::InferenceMode guard;
+        std::vector<torch::jit::IValue> inputs;
+        inputs.push_back(input);
+        return this->hess_model.forward(inputs).toTensor();
     }
 };
 
@@ -65,6 +78,19 @@ void L4CasADi::jac(const double* in, int rows, int cols, double* out) {
     }
     // CasADi expects the return in Fortran order -> Transpose last two dimensions
     torch::Tensor out_tensor = this->pImpl->jac(in_tensor).to(torch::kDouble).transpose(-2, -1).contiguous();
+    std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
+}
+
+void L4CasADi::hess(const double* in, int rows, int cols, double* out) {
+    torch::Tensor in_tensor;
+    if (this->has_batch) {
+        in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
+    } else {
+        in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
+    }
+
+    // CasADi expects the return in Fortran order -> Transpose last two dimensions
+    torch::Tensor out_tensor = this->pImpl->hess(in_tensor).to(torch::kDouble).transpose(-2, -1).contiguous();
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
 }
 
