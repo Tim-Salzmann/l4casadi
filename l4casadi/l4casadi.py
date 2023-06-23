@@ -27,6 +27,10 @@ class L4CasADi:
     def __call__(self, *args):
         return self.forward(*args)
 
+    @property
+    def shared_lib_dir(self):
+        return self.generation_path.absolute().as_posix()
+
     def forward(self, inp: Tuple[cs.MX, cs.SX, cs.DM]):
         if self.has_batch:
             if not inp.shape[-1] == 1:   # type: ignore[attr-defined]
@@ -51,7 +55,7 @@ class L4CasADi:
         self.generate_cpp_function_template(rows, cols)
         self.compile_cs_function()
 
-        self._ext_cs_fun = cs.external(f'{self.name}', f'{self.generation_path / self.name}.so')
+        self._ext_cs_fun = cs.external(f'{self.name}', f"{self.generation_path / f'lib{self.name}'}.so")
         self._ready = True
 
     def generate_cpp_function_template(self, rows: int, cols: int):
@@ -94,7 +98,7 @@ class L4CasADi:
         os_cmd = ("gcc"
                   " -fPIC -shared"
                   f" {self.generation_path / self.name}.cpp"
-                  f" -o {self.generation_path / self.name}.so"
+                  f" -o {self.generation_path / f'lib{self.name}'}.so"
                   f" -I{include_dir} -L{file_dir}"
                   " -ll4casadi -lstdc++ -std=c++17"
                   " -D_GLIBCXX_USE_CXX11_ABI=0"
