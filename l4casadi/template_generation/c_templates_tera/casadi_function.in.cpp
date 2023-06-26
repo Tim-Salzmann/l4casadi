@@ -1,6 +1,6 @@
 #include <l4casadi.hpp>
 
-L4CasADi l4casadi("{{ model_path }}", "{{ name }}", {{ has_batch }});
+L4CasADi l4casadi("{{ model_path }}", "{{ name }}", {{ has_batch }}, "{{ device }}");
 
 #ifdef __cplusplus
 extern "C" {

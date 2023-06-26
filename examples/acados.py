@@ -2,7 +2,7 @@ import casadi as cs
 import numpy as np
 import torch
 import l4casadi as l4c
-from acados_template import AcadosSimSolver, AcadosOcpSolver, AcadosOcp, AcadosModel
+from acados_template import AcadosOcpSolver, AcadosOcp, AcadosModel
 import time
 
 
