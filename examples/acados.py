@@ -5,6 +5,8 @@ import l4casadi as l4c
 from acados_template import AcadosOcpSolver, AcadosOcp, AcadosModel
 import time
 
+COST = 'LINEAR_LS'  # NONLINEAR_LS
+
 
 class MultiLayerPerceptron(torch.nn.Module):
     def __init__(self):
@@ -103,17 +105,34 @@ class MPC:
         ocp.dims.ny = ny
         ocp.solver_options.tf = t_horizon
 
-        # Initialize cost function
-        ocp.cost.cost_type = 'LINEAR_LS'
-        ocp.cost.cost_type_e = 'LINEAR_LS'
+        if COST == 'LINEAR_LS':
+            # Initialize cost function
+            ocp.cost.cost_type = 'LINEAR_LS'
+            ocp.cost.cost_type_e = 'LINEAR_LS'
 
-        ocp.cost.W = np.array([[1.]])
+            ocp.cost.W = np.array([[1.]])
 
-        ocp.cost.Vx = np.zeros((ny, nx))
-        ocp.cost.Vx[0, 0] = 1.
-        ocp.cost.Vu = np.zeros((ny, nu))
-        ocp.cost.Vz = np.array([[]])
-        ocp.cost.Vx_e = np.zeros((ny, nx))
+            ocp.cost.Vx = np.zeros((ny, nx))
+            ocp.cost.Vx[0, 0] = 1.
+            ocp.cost.Vu = np.zeros((ny, nu))
+            ocp.cost.Vz = np.array([[]])
+            ocp.cost.Vx_e = np.zeros((ny, nx))
+
+            l4c_y_expr = None
+        else:
+            ocp.cost.cost_type = 'NONLINEAR_LS'
+            ocp.cost.cost_type_e = 'NONLINEAR_LS'
+
+            x = ocp.model.x
+
+            ocp.cost.W = np.array([[1.]])
+
+            # Trivial PyTorch index 0
+            l4c_y_expr = l4c.L4CasADi(lambda x: x[0], name='y_expr')
+
+            ocp.model.cost_y_expr = l4c_y_expr(x)
+            ocp.model.cost_y_expr_e = x[0]
+
         ocp.cost.W_e = np.array([[0.]])
         ocp.cost.yref_e = np.array([0.])
 
@@ -135,7 +154,10 @@ class MPC:
         ocp.solver_options.integrator_type = 'ERK'
         ocp.solver_options.nlp_solver_type = 'SQP_RTI'
         ocp.solver_options.model_external_shared_lib_dir = self.external_shared_lib_dir
-        ocp.solver_options.model_external_shared_lib_name = self.external_shared_lib_name
+        if COST == 'LINEAR_LS':
+            ocp.solver_options.model_external_shared_lib_name = self.external_shared_lib_name
+        else:
+            ocp.solver_options.model_external_shared_lib_name = self.external_shared_lib_name + ' -l' + l4c_y_expr.name
 
         return ocp
 
