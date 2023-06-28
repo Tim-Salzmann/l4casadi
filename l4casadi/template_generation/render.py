@@ -1,3 +1,5 @@
+# Code mainly copied from
+# https://github.com/acados/acados/blob/1e196fd7533dddf3ba24ebca0eb9aa0c982276b9/interfaces/acados_template/acados_template/utils.py
 import os
 import sys
 import pathlib

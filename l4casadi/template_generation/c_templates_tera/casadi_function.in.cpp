@@ -1,6 +1,6 @@
 #include <l4casadi.hpp>
 
-L4CasADi l4casadi("{{ model_path }}", "{{ name }}", {{ has_batch }}, "{{ device }}");
+L4CasADi l4casadi("{{ model_path }}", "{{ name }}", {{ has_batch }}, "{{ device }}", {{ has_jac }}, {{ has_hess }});
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,15 +41,19 @@ CASADI_SYMBOL_EXPORT int {{ name }}(const casadi_real** arg, casadi_real** res, 
   return 0;
 }
 
+{%- if has_jac %}
 CASADI_SYMBOL_EXPORT int jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.jac(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
 }
+{%- endif %}
 
+{%- if has_hess %}
 CASADI_SYMBOL_EXPORT int jac_jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.hess(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
 }
+{%- endif %}
 
 /*
 CASADI_SYMBOL_EXPORT int {{ name }}_alloc_mem(void) { return 0; }

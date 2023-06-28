@@ -3,6 +3,7 @@
 
 #include <torch/torch.h>
 #include <torch/script.h>
+//#include <torch/mps.h>
 
 #include "l4casadi.hpp"
 
@@ -17,12 +18,16 @@ class L4CasADi::L4CasADiImpl
     torch::Device device;
 
 public:
-    L4CasADiImpl(std::string model_path, std::string model_prefix, std::string device): device{torch::kCPU} {
+    L4CasADiImpl(std::string model_path, std::string model_prefix, std::string device, bool has_jac, bool has_hess)
+        : device{torch::kCPU} {
         if (torch::cuda::is_available() && device.compare("cpu")) {
-            std::cout << "CUDA is available! Training on GPU " << device << "." << std::endl;
+            std::cout << "CUDA is available! Using GPU " << device << "." << std::endl;
             this->device = torch::Device(device);
+        // } else if (torch::mps::is_available() && device.compare("cpu")) {
+        //     std::cout << "MPS is available! Training on MPS " << device << "." << std::endl;
+        //     this->device = torch::Device(device);
         } else if (!torch::cuda::is_available() && device.compare("cpu")) {
-            std::wcout << "CUDA is not available! Training on CPU." << std::endl;
+            std::wcout << "CUDA is not available! Using CPU." << std::endl;
             this->device = torch::Device(torch::kCPU);
         } else {
             this->device = torch::Device(device);
@@ -35,17 +40,21 @@ public:
         this->forward_model.eval();
         this->forward_model = torch::jit::optimize_for_inference(this->forward_model);
 
-        std::filesystem::path jac_model_file (model_prefix + "_jacrev.pt");
-        this->jac_model = torch::jit::load(dir / jac_model_file);
-        this->jac_model.to(this->device);
-        this->jac_model.eval();
-        this->jac_model = torch::jit::optimize_for_inference(this->jac_model);
+        if (has_jac) {
+            std::filesystem::path jac_model_file (model_prefix + "_jacrev.pt");
+            this->jac_model = torch::jit::load(dir / jac_model_file);
+            this->jac_model.to(this->device);
+            this->jac_model.eval();
+            this->jac_model = torch::jit::optimize_for_inference(this->jac_model);
+        }
 
-        std::filesystem::path hess_model_file (model_prefix + "_hess.pt");
-        this->hess_model = torch::jit::load(dir / hess_model_file);
-        this->hess_model.to(this->device);
-        this->hess_model.eval();
-        this->hess_model = torch::jit::optimize_for_inference(this->hess_model);
+        if (has_hess) {
+            std::filesystem::path hess_model_file (model_prefix + "_hess.pt");
+            this->hess_model = torch::jit::load(dir / hess_model_file);
+            this->hess_model.to(this->device);
+            this->hess_model.eval();
+            this->hess_model = torch::jit::optimize_for_inference(this->hess_model);
+        }
     }
 
     torch::Tensor forward(torch::Tensor input) {
@@ -70,8 +79,9 @@ public:
     }
 };
 
-L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool has_batch, std::string device):
-    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device)},
+L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool has_batch, std::string device,
+        bool has_jac, bool has_hess):
+    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device, has_jac, has_hess)},
     has_batch{has_batch} {}
 
 void L4CasADi::forward(const double* in, int rows, int cols, double* out) {
