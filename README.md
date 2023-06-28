@@ -19,7 +19,10 @@ If you use this framework please cite our paper
 ## Installation
 Tested on Ubuntu 20.04 and MacOS.
 
-Prerequisites: make and cmake. CPU only installation of `PyTorch==2.0.0`. CPU versions `>2.0.0` might work too.
+### Prerequisites
+Python 3.9 or higher.
+gcc, make and cmake.
+CPU only installation of `PyTorch==2.0.0`. CPU versions `>2.0.0` might work too.
 
 Install L4CasADi via `pip install .`
 
