@@ -18,7 +18,7 @@ class L4CasADi(object):
                  has_batch: bool = False, device: Union[torch.device, Text] = "cpu", name: Text = "l4casadi_f"):
         self.model = model
         if isinstance(self.model, torch.nn.Module):
-            self.model.eval()
+            self.model.eval().to(device)
             for parameters in self.model.parameters():
                 parameters.requires_grad = False
         self.name = name
@@ -66,10 +66,10 @@ class L4CasADi(object):
 
     def generate_cpp_function_template(self, rows: int, cols: int, has_jac: bool, has_hess: bool):
         if self.has_batch:
-            rows_out = self.model(torch.zeros(1, rows)).shape[-1]
+            rows_out = self.model(torch.zeros(1, rows).to(self.device)).shape[-1]
             cols_out = 1
         else:
-            out_shape = self.model(torch.zeros(rows, cols)).shape
+            out_shape = self.model(torch.zeros(rows, cols).to(self.device)).shape
             if len(out_shape) == 1:
                 rows_out = out_shape[0]
                 cols_out = 1
@@ -121,6 +121,7 @@ class L4CasADi(object):
             d_inp = torch.zeros((1, rows))
         else:
             d_inp = torch.zeros((rows, cols))
+        d_inp = d_inp.to(self.device)
 
         out_folder = self.generation_path
 

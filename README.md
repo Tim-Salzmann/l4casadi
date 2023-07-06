@@ -22,15 +22,30 @@ Tested on Ubuntu 20.04 and MacOS.
 ### Prerequisites
 Python 3.9 or higher.
 gcc, make and cmake.
+
+### CPU Installation
 CPU only installation of `PyTorch==2.0.0`. CPU versions `>2.0.0` might work too.
 
 Install L4CasADi via `pip install .`
 
+### GPU (CUDA) Installation
+CUDA installation of `PyTorch==2.0.0`.
+
+Install L4CasADi via `USE_CUDA=TRUE CUDACXX=<PATH_TO_nvcc> pip install .`
+
+### Mac M1 - ARM
 On MacOS with M1 chip you will have to compile [tera_renderer](https://github.com/acados/tera_renderer) from source
 and place the binary in `l4casadi/template_generation/bin`. For other platforms it will be downloaded automatically.
 
 ## Example
-https://github.com/Tim-Salzmann/l4casadi/blob/5edbe4b31d915c6d897608f183d06c53eaf14f63/examples/readme.py#L28-L40
+https://github.com/Tim-Salzmann/l4casadi/blob/d800ca7bea785a22b05c64f4aecd7554ba5093d3/examples/readme.py#L28-L40
+
+Please note that only `casadi.MX` symbolic variables are supported as input.
+
+Multi-input multi-output functions can be realized by concatenating the symbolic inputs when passing to the model and
+splitting them inside the PyTorch function.
+
+To use GPU (CUDA) simply pass `device="cuda"` to the `L4CasADi` constructor.
 
 An example of solving a simple NLP with torch system model can be found in
 [examples/simple_nlp.py](/examples/simple_nlp.py).
@@ -45,6 +60,16 @@ To use this framework with Acados:
 An example of how a PyTorch model can be used as dynamics model in the Acados framework for Model Predictive Control 
 can be found in [examples/acados.py](/examples/acados.py)
 
+To use L4CasADi with Acados you will have to set `model_external_shared_lib_dir` and `model_external_shared_lib_name`
+in the `AcadosOcp.solver_options` accordingly.
+
+```
+ocp.solver_options.model_external_shared_lib_dir = l4c_model.shared_lib_dir
+ocp.solver_options.model_external_shared_lib_name = l4c_model.name
+```
+
+https://github.com/Tim-Salzmann/l4casadi/blob/421de6ef408267eed0fd2519248b2152b610d2cc/examples/acados.py#L156-L160
+
 ## Warm Up
 
 Note that PyTorch builds the graph on first execution. Thus, the first call(s) to the CasADi function will be slow.
@@ -56,6 +81,5 @@ please get in contact or create a pull request.
 
 Possible upcoming features include:
 ```
-- GPU support.
-- Multi input, multi output functions.
+- Explicit multi input, multi output functions.
 ```
