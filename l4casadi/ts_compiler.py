@@ -44,6 +44,12 @@ def ts_compile(fx_g: fx.GraphModule) -> torch.jit.ScriptModule:
 
         for node in fx_g.graph.nodes:
             if (
+                node.target == torch.ops.prims.mul
+                and type(node.args[1]) == int
+            ):
+                node.target = torch.ops.aten.mul
+
+            if (
                 node.target == torch.ops.aten._to_copy
                 and len(node.args) == 1
                 and len(node.kwargs) == 1

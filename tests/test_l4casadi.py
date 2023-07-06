@@ -15,6 +15,8 @@ class DeepModel(torch.nn.Module):
         for i in range(20):
             hidden_layers.append(torch.nn.Linear(512, 512))
 
+        self.ln = torch.nn.LayerNorm(512)
+
         self.hidden_layer = torch.nn.ModuleList(hidden_layers)
         self.out_layer = torch.nn.Linear(512, dim_out)
 
@@ -22,6 +24,7 @@ class DeepModel(torch.nn.Module):
         x = self.input_layer(x)
         for layer in self.hidden_layer:
             x = torch.tanh(layer(x))
+        x = self.ln(x)
         x = self.out_layer(x)
         return x
 
