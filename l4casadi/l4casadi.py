@@ -58,6 +58,12 @@ class L4CasADi(object):
 
         self.maybe_make_generation_dir()
         has_jac, has_hess = self.export_torch_traces(rows, cols)
+
+        if not has_jac:
+            print('Jacobian trace could not be generated. First-order sensitivities will not be available in CasADi.')
+        if not has_hess:
+            print('Hessian trace could not be generated. Second-order sensitivities will not be available in CasADi.')
+
         self.generate_cpp_function_template(rows, cols, has_jac, has_hess)
         self.compile_cs_function()
 
