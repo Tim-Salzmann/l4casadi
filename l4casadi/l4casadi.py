@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import platform
 from importlib.resources import files
 from typing import Union, Optional, Callable, Text, Tuple
 
@@ -11,6 +12,10 @@ from l4casadi.ts_compiler import ts_compile
 from torch.fx.experimental.proxy_tensor import make_fx
 
 from l4casadi.template_generation import render_template
+
+
+def dynamic_lib_file_ending():
+    return '.dylib' if platform.system() == 'Darwin' else '.so'
 
 
 class L4CasADi(object):
@@ -67,7 +72,10 @@ class L4CasADi(object):
         self.generate_cpp_function_template(rows, cols, has_jac, has_hess)
         self.compile_cs_function()
 
-        self._ext_cs_fun = cs.external(f'{self.name}', f"{self.generation_path / f'lib{self.name}'}.so")
+        self._ext_cs_fun = cs.external(
+            f'{self.name}',
+            f"{self.generation_path / f'lib{self.name}'}{dynamic_lib_file_ending()}"
+        )
         self._ready = True
 
     def generate_cpp_function_template(self, rows: int, cols: int, has_jac: bool, has_hess: bool):
@@ -110,11 +118,13 @@ class L4CasADi(object):
         lib_dir = file_dir / 'lib'
 
         # call gcc
+        soname = 'install_name' if platform.system() == 'Darwin' else 'soname'
         os_cmd = ("gcc"
                   " -fPIC -shared"
                   f" {self.generation_path / self.name}.cpp"
-                  f" -o {self.generation_path / f'lib{self.name}'}.so"
+                  f" -o {self.generation_path / f'lib{self.name}'}{dynamic_lib_file_ending()}"
                   f" -I{include_dir} -L{lib_dir}"
+                  f" -Wl,-{soname},lib{self.name}{dynamic_lib_file_ending()}"
                   " -ll4casadi -lstdc++ -std=c++17"
                   " -D_GLIBCXX_USE_CXX11_ABI=0")
 
