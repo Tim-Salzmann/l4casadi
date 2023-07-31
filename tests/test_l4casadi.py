@@ -50,7 +50,7 @@ class TestL4CasADi:
         rand_inp = torch.rand((1, deep_model.input_layer.in_features))
         torch_out = deep_model(rand_inp)
 
-        l4c_out = l4c.L4CasADi(deep_model, has_batch=True)(rand_inp.transpose(-2, -1).detach().numpy())
+        l4c_out = l4c.L4CasADi(deep_model, model_expects_batch_dim=True)(rand_inp.transpose(-2, -1).detach().numpy())
 
         np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
 
@@ -68,7 +68,9 @@ class TestL4CasADi:
 
         mx_inp = cs.MX.sym('x', deep_model.input_layer.in_features, 1)
 
-        jac_fun = cs.Function('f_jac', [mx_inp], [cs.jacobian(l4c.L4CasADi(deep_model, has_batch=True)(mx_inp), mx_inp)])
+        jac_fun = cs.Function('f_jac',
+                              [mx_inp],
+                              [cs.jacobian(l4c.L4CasADi(deep_model, model_expects_batch_dim=True)(mx_inp), mx_inp)])
 
         l4c_out = jac_fun(rand_inp.transpose(-2, -1).detach().numpy())
 

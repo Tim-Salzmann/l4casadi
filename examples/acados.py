@@ -174,7 +174,7 @@ class MPC:
 
 def run():
     N = 10
-    learned_dyn_model = l4c.L4CasADi(MultiLayerPerceptron(), has_batch=True, name='learned_dyn')
+    learned_dyn_model = l4c.L4CasADi(MultiLayerPerceptron(), model_expects_batch_dim=True, name='learned_dyn')
 
     model = DoubleIntegratorWithLearnedDynamics(learned_dyn_model)
     solver = MPC(model=model.model(), N=N,

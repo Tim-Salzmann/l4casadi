@@ -8,9 +8,9 @@
 class L4CasADi
 {
 private:
-    bool has_batch;
+    bool model_expects_batch_dim;
 public:
-    L4CasADi(std::string, std::string, bool has_batch = false, std::string = "cpu", bool = false, bool = false);
+    L4CasADi(std::string, std::string, bool = false, std::string = "cpu", bool = false, bool = false);
     ~L4CasADi();
     void forward(const double*, int, int, double*);
     void jac(const double*, int, int, double*);

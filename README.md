@@ -38,7 +38,7 @@ On MacOS with M1 chip you will have to compile [tera_renderer](https://github.co
 and place the binary in `l4casadi/template_generation/bin`. For other platforms it will be downloaded automatically.
 
 ## Example
-https://github.com/Tim-Salzmann/l4casadi/blob/d800ca7bea785a22b05c64f4aecd7554ba5093d3/examples/readme.py#L28-L40
+https://github.com/Tim-Salzmann/l4casadi/blob/23e07380e214f70b8932578317aa373d2216b57e/examples/readme.py#L28-L40
 
 Please note that only `casadi.MX` symbolic variables are supported as input.
 

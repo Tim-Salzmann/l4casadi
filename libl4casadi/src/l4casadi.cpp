@@ -79,14 +79,14 @@ public:
     }
 };
 
-L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool has_batch, std::string device,
+L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool model_expects_batch_dim, std::string device,
         bool has_jac, bool has_hess):
     pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device, has_jac, has_hess)},
-    has_batch{has_batch} {}
+    model_expects_batch_dim{model_expects_batch_dim} {}
 
 void L4CasADi::forward(const double* in, int rows, int cols, double* out) {
     torch::Tensor in_tensor;
-    if (this->has_batch) {
+    if (this->model_expects_batch_dim) {
         in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
     } else {
         in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
@@ -98,7 +98,7 @@ void L4CasADi::forward(const double* in, int rows, int cols, double* out) {
 
 void L4CasADi::jac(const double* in, int rows, int cols, double* out) {
     torch::Tensor in_tensor;
-    if (this->has_batch) {
+    if (this->model_expects_batch_dim) {
         in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
     } else {
         in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);
@@ -110,7 +110,7 @@ void L4CasADi::jac(const double* in, int rows, int cols, double* out) {
 
 void L4CasADi::hess(const double* in, int rows, int cols, double* out) {
     torch::Tensor in_tensor;
-    if (this->has_batch) {
+    if (this->model_expects_batch_dim) {
         in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
     } else {
         in_tensor = torch::from_blob(( void * )in, {rows, cols}, at::kDouble).to(torch::kFloat);

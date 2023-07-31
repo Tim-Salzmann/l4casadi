@@ -25,7 +25,7 @@ class MultiLayerPerceptron(torch.nn.Module):
 
 
 pyTorch_model = MultiLayerPerceptron()
-l4c_model = l4c.L4CasADi(pyTorch_model, has_batch=True, device='cpu')  # device='cuda' for GPU
+l4c_model = l4c.L4CasADi(pyTorch_model, model_expects_batch_dim=True, device='cpu')  # device='cuda' for GPU
 
 x_sym = cs.MX.sym('x', 2, 1)
 y_sym = l4c_model(x_sym)
