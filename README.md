@@ -50,6 +50,12 @@ To use GPU (CUDA) simply pass `device="cuda"` to the `L4CasADi` constructor.
 An example of solving a simple NLP with torch system model can be found in
 [examples/simple_nlp.py](/examples/simple_nlp.py).
 
+## Batch Dimension
+If your PyTorch model expects a batch dimension as first dimension (which most models do) you should pass
+`model_expects_batch_dim=True` to the `L4CasADi` constructor. The `MX` input to the L4CasADi component is then expected
+to be a vector of shape `[X, 1]`. L4CasADi will add a batch dimension of `1` automatically such that the input to the
+underlying PyTorch model is of shape `[1, X]`.
+
 ## Integration with Acados
 To use this framework with Acados:
 - Follow the [installation instructions](https://docs.acados.org/installation/index.html).
