@@ -101,7 +101,7 @@ class L4CasADi(object):
                 rows_out, cols_out = out_shape[-2:]
 
         gen_params = {
-            'model_path': self.generation_path.as_posix(),
+            'model_path': self.generation_path.absolute().as_posix(),
             'device': self.device,
             'name': self.name,
             'rows_in': rows,
