@@ -23,17 +23,19 @@ Tested on Ubuntu 20.04 and MacOS.
 Python 3.9 or higher.
 gcc, make and cmake.
 
-### CPU Installation
-CPU only installation of `PyTorch==2.0.0`. CPU versions `>2.0.0` might work too.
+### Installation
+Make sure you have a working PyTorch installation in your python environment.
 
-Install L4CasADi via `pip install .`
+`python -c "import torch; print(torch.__version__)"`
 
-### GPU (CUDA) Installation
-CUDA installation of `PyTorch==2.0.0`.
 
-Install L4CasADi via `USE_CUDA=TRUE CUDACXX=<PATH_TO_nvcc> pip install .`
+With the python environment activated install L4CasADi using the installation script `./install.sh`. This is a thin wrapper around pip. The script will
+determine and link against the PyTorch version installed in your environment automatically.
 
-### Mac M1 - ARM
+#### GPU (CUDA) Installation
+Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> ./install.sh`
+
+#### Mac M1 - ARM
 On MacOS with M1 chip you will have to compile [tera_renderer](https://github.com/acados/tera_renderer) from source
 and place the binary in `l4casadi/template_generation/bin`. For other platforms it will be downloaded automatically.
 
