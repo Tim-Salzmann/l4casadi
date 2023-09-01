@@ -28,9 +28,15 @@ Make sure you have a working PyTorch installation in your python environment.
 
 `python -c "import torch; print(torch.__version__)"`
 
+Install all build dependencies via
 
-With the python environment activated install L4CasADi using the installation script `./install.sh`. This is a thin wrapper around pip. The script will
-determine and link against the PyTorch version installed in your environment automatically.
+`pip install -r requirements_build.txt`
+
+With the python environment activated install L4CasADi via
+
+`pip install . --no-build-isolation`
+
+The `--no-build-isolation` flag is required for L4CasADi to find and link against the installed PyTorch.
 
 #### GPU (CUDA) Installation
 Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> ./install.sh`

@@ -1,6 +1,19 @@
-from skbuild import setup
-import shutil
-import pathlib
+import os
+
+try:
+    from skbuild import setup
+    import shutil
+    import pathlib
+except ImportError:
+    raise ImportError('Please make sure all build requirements for L4CasADi are installed: `pip install -r '
+                      'requirements_build.txt`')
+
+try:
+    import torch
+except ImportError:
+    raise ImportError('PyTorch is required to build and install L4CasADi. Please install PyTorch and install '
+                      'l4casadi with `pip install l4casadi --no-build-isolation` or from source via `pip install . '
+                      '--no-build-isolation`')
 
 
 def compile_hook(manifest):
@@ -20,6 +33,7 @@ def compile_hook(manifest):
 setup(
     cmake_process_manifest_hook=compile_hook,
     cmake_source_dir='libl4casadi',
+    cmake_args=[f'-DCMAKE_TORCH_PATH={os.path.dirname(os.path.abspath(torch.__file__))}'],
     include_package_data=True,
     package_data={'': [
         'lib/**.dylib',
