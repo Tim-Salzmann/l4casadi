@@ -23,15 +23,25 @@ Independently if you install from source or via pip you will need to meet the fo
 - Working PyTorch installation in your python environment.\
 `python -c "import torch; print(torch.__version__)"`
 
-- All build dependencies installed via\
-`pip install -r requirements_build.txt`
-
 ### Pip Install
+- Ensure all build dependencies are installed
+```
+setuptools>=68.1
+scikit-build>=0.17
+cmake>=3.27
+ninja>=1.11
+torch>=2.0
+```
+
+- Run\
 `pip install l4casadi --no-build-isolation`
 
 ### From Source
 - Clone the repository\
 `git clone https://github.com/Tim-Salzmann/l4casadi.git`
+
+- All build dependencies installed via\
+`pip install -r requirements_build.txt`
 
 - Build from source\
 `pip install . --no-build-isolation`
@@ -39,7 +49,7 @@ Independently if you install from source or via pip you will need to meet the fo
 The `--no-build-isolation` flag is required for L4CasADi to find and link against the installed PyTorch.
 
 #### GPU (CUDA) Installation
-Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> ./install.sh`
+Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` to build from source.
 
 #### Mac M1 - ARM
 On MacOS with M1 chip you will have to compile [tera_renderer](https://github.com/acados/tera_renderer) from source
