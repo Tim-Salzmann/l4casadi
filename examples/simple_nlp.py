@@ -6,10 +6,10 @@ x = cs.MX.sym("x", 2)
 
 # Form the NLP
 f = lambda x: x[0] ** 2 + x[1] ** 2  # objective
-f = l4c.L4CasADi(f, name='f')(x)
+f = l4c.L4CasADi(f, name='f', model_expects_batch_dim=False)(x)
 
 g = lambda x: x[0] + x[1] - 10  # constraint
-g = l4c.L4CasADi(g, name='g')(x)
+g = l4c.L4CasADi(g, name='g', model_expects_batch_dim=False)(x)
 
 nlp = {'x': x, 'f': f, 'g': g}
 
