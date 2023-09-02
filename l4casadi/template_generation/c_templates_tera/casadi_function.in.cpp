@@ -55,48 +55,10 @@ CASADI_SYMBOL_EXPORT int jac_jac_{{ name }}(const casadi_real** arg, casadi_real
 }
 {%- endif %}
 
-/*
-CASADI_SYMBOL_EXPORT int {{ name }}_alloc_mem(void) { return 0; }
-
-CASADI_SYMBOL_EXPORT int {{ name }}_init_mem(int mem) { return 0; }
-
-CASADI_SYMBOL_EXPORT void {{ name }}_free_mem(int mem) {}
-
-CASADI_SYMBOL_EXPORT int {{ name }}_checkout(void) { return 0; }
-
-CASADI_SYMBOL_EXPORT void {{ name }}_release(int mem) {}
-
-CASADI_SYMBOL_EXPORT void {{ name }}_incref(void) {}
-
-CASADI_SYMBOL_EXPORT void {{ name }}_decref(void) {}
-*/
-
 // Only single input, single output is supported at the moment
 CASADI_SYMBOL_EXPORT casadi_int {{ name }}_n_in(void) { return 1;}
 
 CASADI_SYMBOL_EXPORT casadi_int {{ name }}_n_out(void) { return 1;}
-
-/*
-CASADI_SYMBOL_EXPORT casadi_real {{ name }}_default_in(casadi_int i) {
-  switch (i) {
-    default: return 0;
-  }
-}
-
-CASADI_SYMBOL_EXPORT const char* {{ name }}_name_in(casadi_int i) {
-  switch (i) {
-    case 0: return "i0";
-    default: return 0;
-  }
-}
-
-CASADI_SYMBOL_EXPORT const char* {{ name }}_name_out(casadi_int i) {
-  switch (i) {
-    case 0: return "o0";
-    default: return 0;
-  }
-}
-*/
 
 CASADI_SYMBOL_EXPORT const casadi_int* {{ name }}_sparsity_in(casadi_int i) {
   switch (i) {
@@ -111,17 +73,6 @@ CASADI_SYMBOL_EXPORT const casadi_int* {{ name }}_sparsity_out(casadi_int i) {
     default: return 0;
   }
 }
-
-/*
-CASADI_SYMBOL_EXPORT int {{ name }}_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
-  if (sz_arg) *sz_arg = 0;
-  if (sz_res) *sz_res = 0;
-  if (sz_iw) *sz_iw = 0;
-  if (sz_w) *sz_w = 0;
-  return 0;
-}
-*/
-
 
 #ifdef __cplusplus
 } /* extern "C" */

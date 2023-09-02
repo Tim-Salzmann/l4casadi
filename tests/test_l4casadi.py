@@ -58,7 +58,7 @@ class TestL4CasADi:
         rand_inp = torch.rand((12, 12))
         torch_out = triag_model(rand_inp)
 
-        l4c_out = l4c.L4CasADi(triag_model)(rand_inp.detach().numpy())
+        l4c_out = l4c.L4CasADi(triag_model, model_expects_batch_dim=False)(rand_inp.detach().numpy())
 
         np.allclose(l4c_out, torch_out.detach().numpy())
 
