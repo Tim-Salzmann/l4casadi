@@ -17,23 +17,23 @@ If you use this framework please cite our paper
 ```
 
 ## Installation
-Tested on Ubuntu 20.04 and MacOS.
+### Requirements
+Independently if you install from source or via pip you will need to meet the following requirements:
 
-### Prerequisites
-Python 3.9 or higher.
-gcc, make and cmake.
-
-### Installation
-Make sure you have a working PyTorch installation in your python environment.
-
+- Working PyTorch installation in your python environment.\
 `python -c "import torch; print(torch.__version__)"`
 
-Install all build dependencies via
-
+- All build dependencies installed via\
 `pip install -r requirements_build.txt`
 
-With the python environment activated install L4CasADi via
+### Pip Install
+`pip install l4casadi --no-build-isolation`
 
+### From Source
+- Clone the repository\
+`git clone https://github.com/Tim-Salzmann/l4casadi.git`
+
+- Build from source\
 `pip install . --no-build-isolation`
 
 The `--no-build-isolation` flag is required for L4CasADi to find and link against the installed PyTorch.

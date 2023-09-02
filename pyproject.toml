@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "l4casadi"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Tim Salzmann", email="Tim.Salzmann@tum.de" },
 ]
@@ -27,9 +27,8 @@ dependencies = [
     "casadi>=3.6",
 ]
 
-#[project.urls]
-#"Homepage" = "https://github.com/pypa/sampleproject"
-#"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+[project.urls]
+"Homepage" = "https://github.com/Tim-Salzmann/l4casadi"
 
 [tool.setuptools]
 packages = ["l4casadi", "l4casadi.template_generation"]
