@@ -1,9 +1,9 @@
 [![PyPI version](https://badge.fury.io/py/l4casadi.svg)](https://badge.fury.io/py/l4casadi)
 ![L4CasADi CI](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci.yaml/badge.svg)
-
+![Downloads](https://img.shields.io/pypi/dm/l4casadi.svg)
 # Learning 4 CasADi Framework
 
-L4CasADi enables using PyTorch models and functions in a CasADi graph while supporting CasADis code generation 
+L4CasADi enables the use of PyTorch models and functions in a CasADi graph while supporting CasADi code generation 
 capabilities. The only requirement on the PyTorch model is to be traceable and differentiable.
 
 If you use this framework please cite our paper
@@ -50,7 +50,7 @@ torch>=2.0
 The `--no-build-isolation` flag is required for L4CasADi to find and link against the installed PyTorch.
 
 #### GPU (CUDA) Installation
-Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` to build from source.
+Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_nvcc> pip install . --no-build-isolation` to build from source.
 
 #### Mac M1 - ARM
 On MacOS with M1 chip you will have to compile [tera_renderer](https://github.com/acados/tera_renderer) from source
