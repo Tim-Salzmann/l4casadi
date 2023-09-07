@@ -1,14 +1,28 @@
 import casadi as cs
+import torch.nn
+
 import l4casadi as l4c
 
 # Declare variables
 x = cs.MX.sym("x", 2)
 
+
 # Form the NLP
-f = lambda x: x[0] ** 2 + x[1] ** 2  # objective
+class PyTorchObjectiveModel(torch.nn.Module):
+    def forward(self, input):
+        return torch.square(input[0]) + torch.square(input[1])
+
+
+f = PyTorchObjectiveModel()  # objective
 f = l4c.L4CasADi(f, name='f', model_expects_batch_dim=False)(x)
 
-g = lambda x: x[0] + x[1] - 10  # constraint
+
+class PyTorchConstraintModel(torch.nn.Module):
+    def forward(self, input):
+        return input[0] + input[1] - 10
+
+
+g = PyTorchConstraintModel()  # constraint
 g = l4c.L4CasADi(g, name='g', model_expects_batch_dim=False)(x)
 
 nlp = {'x': x, 'f': f, 'g': g}
