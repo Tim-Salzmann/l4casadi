@@ -56,7 +56,7 @@ Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-iso
 On MacOS with M1 chip you will have to compile [tera_renderer](https://github.com/acados/tera_renderer) from source
 and place the binary in `l4casadi/template_generation/bin`. For other platforms it will be downloaded automatically.
 
-## Example
+## Examples
 https://github.com/Tim-Salzmann/l4casadi/blob/23e07380e214f70b8932578317aa373d2216b57e/examples/readme.py#L28-L40
 
 Please note that only `casadi.MX` symbolic variables are supported as input.
@@ -66,8 +66,9 @@ splitting them inside the PyTorch function.
 
 To use GPU (CUDA) simply pass `device="cuda"` to the `L4CasADi` constructor.
 
-An example of solving a simple NLP with torch system model can be found in
-[examples/simple_nlp.py](/examples/simple_nlp.py).
+Further examples:
+- Simple nonlinear programming with L4CasADi model as objective and constraints: [examples/simple_nlp.py](/examples/simple_nlp.py)
+- L4CasADi in pure C(++) projects: [examples/cpp_executable](/examples/cpp_executable)
 
 ## Batch Dimension
 If your PyTorch model expects a batch dimension as first dimension (which most models do) you should pass
