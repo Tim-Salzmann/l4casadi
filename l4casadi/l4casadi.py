@@ -22,8 +22,8 @@ class L4CasADi(object):
     def __init__(self,
                  model: Callable[[torch.Tensor], torch.Tensor],
                  model_expects_batch_dim: bool = True,
-                 device: Union[torch.device, Text] = "cpu",
-                 name: Text = "l4casadi_f",
+                 device: Union[torch.device, Text] = 'cpu',
+                 name: Text = 'l4casadi_f',
                  build_dir: Text = './_l4c_generated'):
         """
         :param model: PyTorch model.
@@ -44,7 +44,7 @@ class L4CasADi(object):
 
         self.build_dir = pathlib.Path(build_dir)
 
-        self._ext_cs_fun: Optional[cs.Function] = None
+        self._cs_fun: Optional[cs.Function] = None
         self._built = False
 
     def __call__(self, *args):
@@ -62,7 +62,7 @@ class L4CasADi(object):
         if not self._built:
             self.build(inp)
 
-        out = self._ext_cs_fun(inp)  # type: ignore[misc]
+        out = self._cs_fun(inp)  # type: ignore[misc]
 
         return out
 
@@ -93,7 +93,7 @@ class L4CasADi(object):
         self.generate_cpp_function_template(rows, cols, has_jac, has_hess)
         self.compile_cs_function()
 
-        self._ext_cs_fun = cs.external(
+        self._cs_fun = cs.external(
             f'{self.name}',
             f"{self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
         )
@@ -153,6 +153,18 @@ class L4CasADi(object):
         if status != 0:
             raise Exception(f'Compilation failed!\n\nAttempted to execute OS command:\n{os_cmd}\n\n')
 
+    def _trace_jac_model(self, inp):
+        if self.has_batch:
+            return make_fx(vmap(jacrev(self.model)))(inp)
+        else:
+            return make_fx(jacrev(self.model))(inp)
+
+    def _trace_hess_model(self, inp):
+        if self.has_batch:
+            return make_fx(vmap(hessian(self.model)))(inp)
+        else:
+            return make_fx(hessian(self.model))(inp)
+
     def export_torch_traces(self, rows: int, cols: int) -> Tuple[bool, bool]:
         if self.has_batch:
             d_inp = torch.zeros((1, rows))
@@ -164,12 +176,8 @@ class L4CasADi(object):
 
         torch.jit.trace(self.model, d_inp).save((out_folder / f'{self.name}_forward.pt').as_posix())
 
-        if self.has_batch:
-            jac_model = make_fx(vmap(jacrev(self.model)))(d_inp)
-            hess_model = make_fx(vmap(hessian(self.model)))(d_inp)
-        else:
-            jac_model = make_fx(jacrev(self.model))(d_inp)
-            hess_model = make_fx(hessian(self.model))(d_inp)
+        jac_model = self._trace_jac_model(d_inp)
+        hess_model = self._trace_hess_model(d_inp)
 
         exported_jacrev = self._jit_compile_and_save(
             jac_model,

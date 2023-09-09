@@ -2,6 +2,7 @@ from importlib.resources import files
 import ctypes
 
 from .l4casadi import L4CasADi, dynamic_lib_file_ending
+from .realtime import RealTimeL4CasADi
 
 
 file_dir = files('l4casadi')
