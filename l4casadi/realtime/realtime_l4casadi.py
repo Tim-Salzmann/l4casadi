@@ -50,6 +50,8 @@ class RealTimeL4CasADi(L4CasADi):
 
     @property
     def sym_params(self) -> List[cs.MX]:
+        if self._taylor_params is None:
+            raise RuntimeError("Model must be called before getting symbolic parameters.")
         return self._flatten_taylor_params(self._taylor_params)
 
     def get_sym_params(self):
