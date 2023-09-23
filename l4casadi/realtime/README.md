@@ -17,5 +17,5 @@ If you use our work please cite our paper
   journal={IEEE Robotics and Automation Letters},
   doi={10.1109/LRA.2023.3246839},
   year={2023}
-}a
+}
 ```
