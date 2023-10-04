@@ -1,6 +1,7 @@
 # Code mainly copied from
 # https://github.com/acados/acados/blob/1e196fd7533dddf3ba24ebca0eb9aa0c982276b9/interfaces/acados_template/acados_template/utils.py
 import os
+import platform
 import sys
 import pathlib
 import urllib
@@ -30,6 +31,15 @@ def get_tera():
     tera_exec_path = get_tera_exec_path()
 
     if os.path.exists(tera_exec_path) and os.access(tera_exec_path, os.X_OK):
+        return tera_exec_path
+
+    # ARM or M1
+    if platform.processor().startswith('arm') or platform.processor().startswith('aarch64'):
+        if not os.path.exists(get_tera_path()):
+            os.makedirs(get_tera_path())
+        src = os.path.join(os.path.dirname(os.path.realpath(__file__)), '_arm_tera_renderer', 't_renderer')
+        dst = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bin', 't_renderer')
+        shutil.copy(src, dst)
         return tera_exec_path
 
     repo_url = "https://github.com/acados/tera_renderer/releases"

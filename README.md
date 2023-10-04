@@ -60,10 +60,6 @@ The `--no-build-isolation` flag is required for L4CasADi to find and link agains
 #### GPU (CUDA)
 Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_nvcc> pip install . --no-build-isolation` to build from source.
 
-#### Mac M1 - ARM
-On MacOS with M1 chip you will have to compile [tera_renderer](https://github.com/acados/tera_renderer) from source
-and place the binary in `l4casadi/template_generation/bin`. For other platforms it will be downloaded automatically.
-
 ---
 
 ## Examples
