@@ -39,7 +39,6 @@ setup(
         'lib/**.dylib',
         'lib/**.so',
         'include/**.hpp',
-        'template_generation/c_templates_tera/casadi_function.in.cpp',
-        'template_generation/_arm_tera_renderer/t_renderer',
+        'template_generation/templates/casadi_function.in.cpp'
     ]},
 )

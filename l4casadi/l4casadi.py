@@ -11,7 +11,7 @@ from torch.func import vmap, jacrev, hessian
 from l4casadi.ts_compiler import ts_compile
 from torch.fx.experimental.proxy_tensor import make_fx
 
-from l4casadi.template_generation import render_template
+from l4casadi.template_generation import render_casadi_c_template
 
 
 def dynamic_lib_file_ending():
@@ -119,18 +119,14 @@ class L4CasADi(object):
             'cols_in': cols,
             'rows_out': rows_out,
             'cols_out': cols_out,
-            'has_jac': has_jac,
-            'has_hess': has_hess,
-            'model_expects_batch_dim': self.has_batch
+            'has_jac': 'true' if has_jac else 'false',
+            'has_hess': 'true' if has_hess else 'false',
+            'model_expects_batch_dim': 'true' if self.has_batch else 'false',
         }
-        with open(self.build_dir / f'{self.name}.json', 'w') as f:
-            json.dump(gen_params, f)
 
-        render_template(
-            'casadi_function.in.cpp',
-            f'{self.name}.cpp',
-            self.build_dir.as_posix(),
-            f'{self.name}.json'
+        render_casadi_c_template(
+            variables=gen_params,
+            out_file=(self.build_dir / f'{self.name}.cpp').as_posix()
         )
 
     def compile_cs_function(self):

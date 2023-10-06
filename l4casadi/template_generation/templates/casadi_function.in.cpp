@@ -41,19 +41,19 @@ CASADI_SYMBOL_EXPORT int {{ name }}(const casadi_real** arg, casadi_real** res, 
   return 0;
 }
 
-{%- if has_jac %}
+{% if has_jac %}
 CASADI_SYMBOL_EXPORT int jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.jac(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
 }
-{%- endif %}
+{% endif %}
 
-{%- if has_hess %}
+{% if has_hess %}
 CASADI_SYMBOL_EXPORT int jac_jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.hess(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
 }
-{%- endif %}
+{% endif %}
 
 // Only single input, single output is supported at the moment
 CASADI_SYMBOL_EXPORT casadi_int {{ name }}_n_in(void) { return 1;}
