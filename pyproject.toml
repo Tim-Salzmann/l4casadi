@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "l4casadi"
-version = "1.1.1"
+version = "1.2.0"
 authors = [
   { name="Tim Salzmann", email="Tim.Salzmann@tum.de" },
 ]
