@@ -76,3 +76,18 @@ class TestL4CasADi:
 
         np.allclose(l4c_out, torch_out.detach().numpy())
 
+    def test_l4casadi_deep_model_hess(self):
+        deep_model = DeepModel(1, 1)
+        rand_inp = torch.rand((1, deep_model.input_layer.in_features))
+        torch_out = torch.func.vmap(torch.func.hessian(deep_model))(rand_inp)[0]
+
+        mx_inp = cs.MX.sym('x', deep_model.input_layer.in_features, 1)
+
+        hess_fun = cs.Function('f_jac',
+                               [mx_inp],
+                               [cs.hessian(l4c.L4CasADi(deep_model, model_expects_batch_dim=True)(mx_inp), mx_inp)[0]])
+
+        l4c_out = hess_fun(rand_inp.transpose(-2, -1).detach().numpy())
+
+        np.allclose(l4c_out, torch_out.detach().numpy())
+
