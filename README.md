@@ -75,6 +75,7 @@ To use GPU (CUDA) simply pass `device="cuda"` to the `L4CasADi` constructor.
 Further examples:
 - Simple nonlinear programming with L4CasADi model as objective and constraints: [examples/simple_nlp.py](/examples/simple_nlp.py)
 - L4CasADi in pure C(++) projects: [examples/cpp_executable](/examples/cpp_executable)
+- Use PyTorch L4CasADi Model in Matlab: [examples/matlab](/examples/matlab)
 
 ---
 
