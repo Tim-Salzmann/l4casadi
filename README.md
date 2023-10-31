@@ -8,6 +8,7 @@
 L4CasADi enables the use of PyTorch models and functions in a CasADi graph while supporting CasADi code generation 
 capabilities. The only requirement on the PyTorch model is to be traceable and differentiable.
 
+[Projects using L4CasADi](#projects-using-l4casadi)\
 [Installation](#installation)\
 [Examples](#examples)\
 [Real-time L4CasADi](#real-time-l4casadi)
@@ -22,6 +23,12 @@ If you use this framework please cite our paper
   year={2023}
 }
 ```
+
+## Projects using L4CasADi
+- Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms <br/> [Paper](https://arxiv.org/pdf/2203.07747.pdf) | [Code](https://github.com/TUM-AAS/neural-mpc)
+- Neural Potential Field for Obstacle-Aware Local Motion Planning <br/> [Paper](https://arxiv.org/pdf/2310.16362.pdf) | [Video](https://www.youtube.com/watch?v=KL3bfvUwGqs) | [Code](https://github.com/cog-isa/NPField)
+
+If your project is using L4CasADi and you would like to be featured here, please reach out.
 
 ---
 ## Installation
