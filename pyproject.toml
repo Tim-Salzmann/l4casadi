@@ -32,4 +32,4 @@ dependencies = [
 "Homepage" = "https://github.com/Tim-Salzmann/l4casadi"
 
 [tool.setuptools]
-packages = ["l4casadi", "l4casadi.realtime", "l4casadi.template_generation"]
+packages = ["l4casadi", "l4casadi.naive", "l4casadi.naive.nn", "l4casadi.realtime", "l4casadi.template_generation"]

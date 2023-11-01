@@ -29,7 +29,7 @@ pyTorch_model = MultiLayerPerceptron()
 
 size_in = 2
 size_out = 1
-l4c_model = l4c.RealTimeL4CasADi(pyTorch_model, approximation_order=1)  # approximation_order=2
+l4c_model = l4c.realtime.RealTimeL4CasADi(pyTorch_model, approximation_order=1)  # approximation_order=2
 
 x_sym = cs.MX.sym('x', 2, 1)
 y_sym = l4c_model(x_sym)

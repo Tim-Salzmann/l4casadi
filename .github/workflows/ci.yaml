@@ -16,7 +16,7 @@ jobs:
     - name: Run mypy
       run: |
         pip install mypy
-        mypy . --ignore-missing-imports
+        mypy . --ignore-missing-imports --exclude examples
     - name: Run flake8
       run: |
         pip install flake8
@@ -44,12 +44,12 @@ jobs:
     - name: Install Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.x
+        python-version: '>=3.9 <3.12'
 
     - name: Install L4CasADi
       run: |
         python -m pip install --upgrade pip
-        pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cpu  # Ensure CPU torch version
+        pip install torch --index-url https://download.pytorch.org/whl/cpu  # Ensure CPU torch version
         pip install -r requirements_build.txt
         pip install . -v --no-build-isolation 
 
@@ -77,13 +77,13 @@ jobs:
           distro: ubuntu_latest
           install: |
             apt-get update
-            apt-get install -y --no-install-recommends python3 python3-pip python-is-python3
+            apt-get install -y --no-install-recommends python3.9 python3-pip python-is-python3
             pip install -U pip
             apt-get install -y build-essential
 
           run: |
             python -m pip install --upgrade pip
-            pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cpu  # Ensure CPU torch version
+            pip install torch --index-url https://download.pytorch.org/whl/cpu  # Ensure CPU torch version
             pip install -r requirements_build.txt
             pip install . -v --no-build-isolation 
             # pip install pytest

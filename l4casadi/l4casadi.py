@@ -1,6 +1,7 @@
 import os
 import pathlib
 import platform
+import shutil
 from importlib.resources import files
 from typing import Union, Optional, Callable, Text, Tuple
 
@@ -11,6 +12,7 @@ from l4casadi.ts_compiler import ts_compile
 from torch.fx.experimental.proxy_tensor import make_fx
 
 from l4casadi.template_generation import render_casadi_c_template
+from l4casadi.naive import NaiveL4CasADiModule
 
 
 def dynamic_lib_file_ending():
@@ -38,6 +40,9 @@ class L4CasADi(object):
             different folder (or another device).
         """
         self.model = model
+        self.naive = False
+        if isinstance(self.model, NaiveL4CasADiModule):
+            self.naive = True
         if isinstance(self.model, torch.nn.Module):
             self.model.eval().to(device)
             for parameters in self.model.parameters():
@@ -65,12 +70,15 @@ class L4CasADi(object):
             if not inp.shape[-1] == 1:   # type: ignore[attr-defined]
                 raise ValueError("For batched PyTorch models only vector inputs are allowed.")
 
-        if not self._built:
-            self.build(inp)
-        if self._cs_fun is None:
-            self._load_built_library_as_external_cs_fun()
+        if self.naive:
+            out = self.model(inp)
+        else:
+            if not self._built:
+                self.build(inp)
+            if self._cs_fun is None:
+                self._load_built_library_as_external_cs_fun()
 
-        out = self._cs_fun(inp)  # type: ignore[misc]
+            out = self._cs_fun(inp)  # type: ignore[misc]
 
         return out
 
@@ -91,14 +99,21 @@ class L4CasADi(object):
         rows, cols = inp.shape  # type: ignore[attr-defined]
 
         self.maybe_make_generation_dir()
-        has_jac, has_hess = self.export_torch_traces(rows, cols)
 
-        if not has_jac:
-            print('Jacobian trace could not be generated. First-order sensitivities will not be available in CasADi.')
-        if not has_hess:
-            print('Hessian trace could not be generated. Second-order sensitivities will not be available in CasADi.')
+        # TODO: The naive case could potentially be removed. Not sure if there exists a use-case for this.
+        if self.naive:
+            inp_sym = cs.MX.sym('inp', rows, cols)
+            out_sym = self.model(inp_sym)
+            cs.Function(f'{self.name}', [inp_sym], [out_sym]).generate(f'{self.name}.cpp')
+            shutil.move(f'{self.name}.cpp', (self.build_dir / f'{self.name}.cpp').as_posix())
+        else:
+            has_jac, has_hess = self.export_torch_traces(rows, cols)
+            if not has_jac:
+                print('Jacobian trace could not be generated. First-order sensitivities will not be available in CasADi.')
+            if not has_hess:
+                print('Hessian trace could not be generated. Second-order sensitivities will not be available in CasADi.')
+            self.generate_cpp_function_template(rows, cols, has_jac, has_hess)
 
-        self.generate_cpp_function_template(rows, cols, has_jac, has_hess)
         self.compile_cs_function()
 
         self._built = True
@@ -153,13 +168,15 @@ class L4CasADi(object):
         # call gcc
         soname = 'install_name' if platform.system() == 'Darwin' else 'soname'
         cxx11_abi = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
+        link_libl4casadi = " -ll4casadi" if not self.naive else ""
         os_cmd = ("gcc"
                   " -fPIC -shared"
                   f" {self.build_dir / self.name}.cpp"
                   f" -o {self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
                   f" -I{include_dir} -L{lib_dir}"
                   f" -Wl,-{soname},lib{self.name}{dynamic_lib_file_ending()}"
-                  " -ll4casadi -lstdc++ -std=c++17"
+                  f"{link_libl4casadi}"
+                  " -lstdc++ -std=c++17"
                   f" -D_GLIBCXX_USE_CXX11_ABI={cxx11_abi}")
 
         status = os.system(os_cmd)

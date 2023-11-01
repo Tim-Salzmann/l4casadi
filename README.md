@@ -86,6 +86,17 @@ Further examples:
 
 ---
 
+## Naive L4CasADi
+
+For small models the overhead of context switches between PyTorch and CasADi can be significant even in pure C++.
+Thus, L4CasADi provides a `NaiveL4CasADiModule` which will directly re-create the PyTorch computational graph in C++
+and copies the weights. This, however is limited to a small subset of PyTorch operations - only `MultiLayerPerceptron`
+models and CPU inference are supported.
+
+https://github.com/Tim-Salzmann/l4casadi/blob/59876b190941c8d43286b6eb3d710add6f14a1d2/examples/naive/readme.py#L5-L9
+
+---
+
 ## Batch Dimension
 
 If your PyTorch model expects a batch dimension as first dimension (which most models do) you should pass
@@ -117,9 +128,13 @@ https://github.com/Tim-Salzmann/l4casadi/blob/421de6ef408267eed0fd2519248b2152b6
 
 ---
 ## Real-time L4CasADi
-Real-time L4Casadi (former [ML-CasADi](https://github.com/TUM-AAS/ml-casadi)) is the underlying framework powering
-[Real-time Neural-MPC](https://arxiv.org/pdf/2203.07747). It replaces complex models with local Taylor approximations
-to enable real-time optimization procedures. More information [here](l4casadi/realtime).
+Real-time L4Casadi (former `Approximated` approach in [ML-CasADi](https://github.com/TUM-AAS/ml-casadi)) is the underlying framework powering
+[Real-time Neural-MPC](https://arxiv.org/pdf/2203.07747). It replaces complex models with local Taylor approximations.
+For certain optimization procedures (such as MPC with multiple shooting nodes) this can lead to improved optimization times.
+However, `Real-time L4Casadi`, comes with many restrictions (only Python, no C(++) code generation, ...) and is therefore not
+a one-to-one replacement for `L4Casadi`. Rather it is a complementary framework for certain special use cases.
+
+More information [here](l4casadi/realtime).
 
 https://github.com/Tim-Salzmann/l4casadi/blob/62219f61375af4c4133167f1d8b138d90f678c32/l4casadi/realtime/examples/readme.py#L32-L43
 

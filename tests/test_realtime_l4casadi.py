@@ -43,7 +43,7 @@ class TestRealTimeL4CasADi:
 
         mx_inp = cs.MX.sym('x', deep_model.input_layer.in_features, 1)
 
-        l4c_model = l4c.RealTimeL4CasADi(deep_model)
+        l4c_model = l4c.realtime.RealTimeL4CasADi(deep_model)
 
         mx_out = l4c_model(mx_inp)
 
@@ -61,7 +61,7 @@ class TestRealTimeL4CasADi:
 
         mx_inp = cs.MX.sym('x', deep_model.input_layer.in_features, 1)
 
-        l4c_model = l4c.RealTimeL4CasADi(deep_model, approximation_order=2)
+        l4c_model = l4c.realtime.RealTimeL4CasADi(deep_model, approximation_order=2)
 
         mx_out = l4c_model(mx_inp)
 
