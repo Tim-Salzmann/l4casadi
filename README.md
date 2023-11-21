@@ -39,7 +39,7 @@ Independently if you install from source or via pip you will need to meet the fo
 - PyTorch (`>=2.0`) installation in your python environment.\
 `python -c "import torch; print(torch.__version__)"`
 
-### Pip Install
+### Pip Install (CPU Only)
 - Ensure all build dependencies are installed
 ```
 setuptools>=68.1
@@ -52,7 +52,7 @@ torch>=2.0
 - Run\
 `pip install l4casadi --no-build-isolation`
 
-### From Source
+### From Source (CPU Only)
 - Clone the repository\
 `git clone https://github.com/Tim-Salzmann/l4casadi.git`
 
@@ -64,8 +64,12 @@ torch>=2.0
 
 The `--no-build-isolation` flag is required for L4CasADi to find and link against the installed PyTorch.
 
-#### GPU (CUDA)
-Install L4CasADi via `CUDACXX=<PATH_TO_nvcc> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_nvcc> pip install . --no-build-isolation` to build from source.
+### GPU (CUDA)
+CUDA installation requires nvcc to be installed which is part of the CUDA toolkit and can be installed on Linux via
+`sudo apt-get -y install cuda-toolkit-XX-X` (where `XX-X` is your installed Cuda version - e.g. `12-3`).
+Once the CUDA toolkit is installed nvcc is commonly found at `/usr/local/cuda/bin/nvcc`.
+
+Install L4CasADi via `CUDACXX=<PATH_TO_NVCC> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_NVCC> pip install . --no-build-isolation` to build from source.
 
 ---
 

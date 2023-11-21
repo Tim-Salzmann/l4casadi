@@ -96,27 +96,33 @@ class L4CasADi(object):
 
         :param inp: Symbolic model input. Used to infer expected input shapes.
         """
-        rows, cols = inp.shape  # type: ignore[attr-defined]
 
         self.maybe_make_generation_dir()
 
         # TODO: The naive case could potentially be removed. Not sure if there exists a use-case for this.
         if self.naive:
+            rows, cols = inp.shape  # type: ignore[attr-defined]
             inp_sym = cs.MX.sym('inp', rows, cols)
             out_sym = self.model(inp_sym)
             cs.Function(f'{self.name}', [inp_sym], [out_sym]).generate(f'{self.name}.cpp')
             shutil.move(f'{self.name}.cpp', (self.build_dir / f'{self.name}.cpp').as_posix())
         else:
-            has_jac, has_hess = self.export_torch_traces(rows, cols)
-            if not has_jac:
-                print('Jacobian trace could not be generated. First-order sensitivities will not be available in CasADi.')
-            if not has_hess:
-                print('Hessian trace could not be generated. Second-order sensitivities will not be available in CasADi.')
-            self.generate_cpp_function_template(rows, cols, has_jac, has_hess)
+            self.generate(inp)
 
-        self.compile_cs_function()
+        self.compile()
 
         self._built = True
+
+    def generate(self, inp: Union[cs.MX, cs.SX, cs.DM]) -> None:
+        rows, cols = inp.shape  # type: ignore[attr-defined]
+        has_jac, has_hess = self.export_torch_traces(rows, cols)
+        if not has_jac:
+            print('Jacobian trace could not be generated.'
+                  ' First-order sensitivities will not be available in CasADi.')
+        if not has_hess:
+            print('Hessian trace could not be generated.'
+                  ' Second-order sensitivities will not be available in CasADi.')
+        self._generate_cpp_function_template(rows, cols, has_jac, has_hess)
 
     def _load_built_library_as_external_cs_fun(self):
         if not self._built:
@@ -126,7 +132,7 @@ class L4CasADi(object):
             f"{self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
         )
 
-    def generate_cpp_function_template(self, rows: int, cols: int, has_jac: bool, has_hess: bool):
+    def _generate_cpp_function_template(self, rows: int, cols: int, has_jac: bool, has_hess: bool):
         if self.has_batch:
             rows_out = self.model(torch.zeros(1, rows).to(self.device)).shape[-1]
             cols_out = 1
@@ -160,7 +166,7 @@ class L4CasADi(object):
             out_file=(self.build_dir / f'{self.name}.cpp').as_posix()
         )
 
-    def compile_cs_function(self):
+    def compile(self):
         file_dir = files('l4casadi')
         include_dir = files('l4casadi') / 'include'
         lib_dir = file_dir / 'lib'
