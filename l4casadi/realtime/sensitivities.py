@@ -1,7 +1,10 @@
 from typing import Callable
 
 import torch
-import torch.func as functorch
+try:
+    import torch.func as functorch
+except ImportError:
+    import functorch
 
 
 def aux_function(func):

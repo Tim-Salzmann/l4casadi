@@ -7,7 +7,10 @@ from typing import Union, Optional, Callable, Text, Tuple
 
 import casadi as cs
 import torch
-from torch.func import vmap, jacrev, hessian
+try:
+    from torch.func import vmap, jacrev, hessian
+except ImportError:
+    from functorch import vmap, jacrev, hessian
 from l4casadi.ts_compiler import ts_compile
 from torch.fx.experimental.proxy_tensor import make_fx
 
@@ -26,7 +29,9 @@ class L4CasADi(object):
                  device: Union[torch.device, Text] = 'cpu',
                  name: Text = 'l4casadi_f',
                  build_dir: Text = './_l4c_generated',
-                 model_search_path: Optional[Text] = None):
+                 model_search_path: Optional[Text] = None,
+                 with_jacobian: bool = True,
+                 with_hessian: bool = True,):
         """
         :param model: PyTorch model.
         :param model_expects_batch_dim: True if the PyTorch model expects a batch dimension. This is commonly True
@@ -38,6 +43,8 @@ class L4CasADi(object):
             the absolute path to the `build_dir` where the model traces are exported to. This parameter can become
             useful if the created L4CasADi dynamic library and the exported PyTorch Models are expected to be moved to a
             different folder (or another device).
+        :param with_jacobian: If True, the Jacobian of the model is exported.
+        :param with_hessian: If True, the Hessian of the model is exported.
         """
         self.model = model
         self.naive = False
@@ -57,6 +64,9 @@ class L4CasADi(object):
 
         self._cs_fun: Optional[cs.Function] = None
         self._built = False
+
+        self._with_jacobian = with_jacobian
+        self._with_hessian = with_hessian
 
     def __call__(self, *args):
         return self.forward(*args)
@@ -116,10 +126,10 @@ class L4CasADi(object):
     def generate(self, inp: Union[cs.MX, cs.SX, cs.DM]) -> None:
         rows, cols = inp.shape  # type: ignore[attr-defined]
         has_jac, has_hess = self.export_torch_traces(rows, cols)
-        if not has_jac:
+        if not has_jac and self._with_jacobian:
             print('Jacobian trace could not be generated.'
                   ' First-order sensitivities will not be available in CasADi.')
-        if not has_hess:
+        if not has_hess and self._with_hessian:
             print('Hessian trace could not be generated.'
                   ' Second-order sensitivities will not be available in CasADi.')
         self._generate_cpp_function_template(rows, cols, has_jac, has_hess)
@@ -212,27 +222,30 @@ class L4CasADi(object):
 
         torch.jit.trace(self.model, d_inp).save((out_folder / f'{self.name}_forward.pt').as_posix())
 
-        jac_model = self._trace_jac_model(d_inp)
+        exported_jacrev = False
+        if self._with_jacobian:
+            jac_model = self._trace_jac_model(d_inp)
 
-        hess_model = None
-        try:
-            hess_model = self._trace_hess_model(d_inp)
-        except:  # noqa
-            pass
-
-        exported_jacrev = self._jit_compile_and_save(
-            jac_model,
-            (out_folder / f'{self.name}_jacrev.pt').as_posix(),
-            d_inp
-        )
-        if hess_model is not None:
-            exported_hess = self._jit_compile_and_save(
-                hess_model,
-                (out_folder / f'{self.name}_hess.pt').as_posix(),
+            exported_jacrev = self._jit_compile_and_save(
+                jac_model,
+                (out_folder / f'{self.name}_jacrev.pt').as_posix(),
                 d_inp
             )
-        else:
-            exported_hess = False
+
+        exported_hess = False
+        if self._with_hessian:
+            hess_model = None
+            try:
+                hess_model = self._trace_hess_model(d_inp)
+            except:  # noqa
+                pass
+
+            if hess_model is not None:
+                exported_hess = self._jit_compile_and_save(
+                    hess_model,
+                    (out_folder / f'{self.name}_hess.pt').as_posix(),
+                    d_inp
+                )
 
         return exported_jacrev, exported_hess
 
