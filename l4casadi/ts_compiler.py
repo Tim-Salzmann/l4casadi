@@ -71,7 +71,7 @@ def ts_compile(fx_g: fx.GraphModule) -> torch.jit.ScriptModule:
 
         f = torch.jit.script(fx_g)
 
-        torch._C._jit_pass_remove_mutation(f.graph)
+        torch._C._jit_pass_remove_mutation(f.graph)  # type: ignore[attr-defined]
 
         f = torch.jit.freeze(f.eval())
         f = torch.jit.optimize_for_inference(f)

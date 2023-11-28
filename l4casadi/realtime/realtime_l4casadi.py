@@ -70,7 +70,7 @@ class RealTimeL4CasADi(L4CasADi):
             return ([a_t.cpu().numpy(), f_a.cpu().numpy(), df_a.transpose(-2, -1).cpu().numpy()]
                     + [ddf_a[:, i].transpose(-2, -1).cpu().numpy() for i in range(ddf_a.shape[1])])
 
-    def get_params(self, a: Union[np.array, torch.Tensor]):
+    def get_params(self, a: Union[np.ndarray, torch.Tensor]):
         a_t = torch.tensor(a).float().to(self.device)
         params = self._get_params(a_t)
 
