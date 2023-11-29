@@ -16,4 +16,4 @@ class TestNaiveL4CasADi:
 
         l4c_out = l4c.L4CasADi(naive_mlp, model_expects_batch_dim=True)(cs_inp)
 
-        np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
+        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())

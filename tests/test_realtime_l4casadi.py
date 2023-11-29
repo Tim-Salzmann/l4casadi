@@ -53,7 +53,7 @@ class TestRealTimeL4CasADi:
 
         l4c_out = cs_fun(rand_inp.transpose(-2, -1).detach().numpy(), params)
 
-        np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
+        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
 
     def test_realtime_l4casadi_deep_model_second_order(self, deep_model):
         rand_inp = torch.rand((1, deep_model.input_layer.in_features))
@@ -71,5 +71,5 @@ class TestRealTimeL4CasADi:
 
         l4c_out = cs_fun(rand_inp.transpose(-2, -1).detach().numpy(), params)
 
-        np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
+        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
 

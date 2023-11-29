@@ -8,9 +8,9 @@ from typing import Union, Optional, Callable, Text, Tuple
 import casadi as cs
 import torch
 try:
-    from torch.func import vmap, jacrev, hessian
+    from torch.func import jacrev, hessian, functionalize
 except ImportError:
-    from functorch import vmap, jacrev, hessian
+    from functorch import jacrev, hessian, functionalize
 from l4casadi.ts_compiler import ts_compile
 from torch.fx.experimental.proxy_tensor import make_fx
 
@@ -200,16 +200,10 @@ class L4CasADi(object):
             raise Exception(f'Compilation failed!\n\nAttempted to execute OS command:\n{os_cmd}\n\n')
 
     def _trace_jac_model(self, inp):
-        if self.has_batch:
-            return make_fx(vmap(jacrev(self.model)))(inp)
-        else:
-            return make_fx(jacrev(self.model))(inp)
+        return make_fx(functionalize(jacrev(self.model), remove='mutations_and_views'))(inp)
 
     def _trace_hess_model(self, inp):
-        if self.has_batch:
-            return make_fx(vmap(hessian(self.model)))(inp)
-        else:
-            return make_fx(hessian(self.model))(inp)
+        return make_fx(functionalize(hessian(self.model), remove='mutations_and_views'))(inp)
 
     def export_torch_traces(self, rows: int, cols: int) -> Tuple[bool, bool]:
         if self.has_batch:
@@ -252,13 +246,13 @@ class L4CasADi(object):
     @staticmethod
     def _jit_compile_and_save(model, file_path: str, dummy_inp: torch.Tensor):
         # TODO: Could switch to torch export https://pytorch.org/docs/stable/export.html
-        # Try tracing
         try:
-            torch.jit.trace(model, dummy_inp).save(file_path)
-        except:  # noqa
             # Try scripting
+            ts_compile(model).save(file_path)
+        except:  # noqa
+            # Try tracing
             try:
-                ts_compile(model).save(file_path)
+                torch.jit.trace(model, dummy_inp).save(file_path)
             except:  # noqa
                 return False
         return True

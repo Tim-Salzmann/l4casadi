@@ -83,7 +83,6 @@ def trajectory_generator_solver(fU, fV, dt, N, u_lim, T, GT):
     }
     nlp_opts = {
         "ipopt.linear_solver": "mumps",
-        "ipopt.hessian_approximation": "limited-memory",
         "ipopt.sb": "yes",
         "ipopt.max_iter": 1000,
         "ipopt.tol": 1e-4,
