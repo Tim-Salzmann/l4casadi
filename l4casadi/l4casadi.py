@@ -144,7 +144,8 @@ class L4CasADi(object):
 
     def _generate_cpp_function_template(self, rows: int, cols: int, has_jac: bool, has_hess: bool):
         if self.has_batch:
-            rows_out = self.model(torch.zeros(1, rows).to(self.device)).shape[-1]
+            out_shape = self.model(torch.zeros(1, rows).to(self.device)).shape
+            rows_out = out_shape[-1]
             cols_out = 1
         else:
             out_shape = self.model(torch.zeros(rows, cols).to(self.device)).shape
@@ -153,6 +154,10 @@ class L4CasADi(object):
                 cols_out = 1
             else:
                 rows_out, cols_out = out_shape[-2:]
+        if len(out_shape) != 2:
+            raise ValueError(f"""L4CasADi requires the model output to be a matrix (2 dimensions) but has 
+                              {len(out_shape)} dimensions. For models which expects a batch dimension, 
+                              the output should be a matrix of [1, d].""")
 
         model_path = (self.build_dir.absolute().as_posix()
                       if self._model_search_path is None

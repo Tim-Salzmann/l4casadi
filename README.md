@@ -2,6 +2,8 @@
 ![L4CasADi CI](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci.yaml/badge.svg)
 ![Downloads](https://img.shields.io/pypi/dm/l4casadi.svg)
 
+**Due to a bug, Hessians for functions with non-scalar outputs were wrong prior to version 1.3.0*
+
 ---
 # Learning 4 CasADi Framework
 
