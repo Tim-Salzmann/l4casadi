@@ -10,12 +10,21 @@
 L4CasADi enables the use of PyTorch models and functions in a CasADi graph while supporting CasADi code generation 
 capabilities. The only requirement on the PyTorch model is to be traceable and differentiable.
 
+<div align="center">
+  <img src="./examples/nerf_trajectory_optimization/media/animation.gif" alt="Collision-free minimum snap optimized trajectory through a NeRF" width="200" height="200">
+  <img src="./examples/fish_turbulent_flow/media/trajectory_generation_vorticity.gif" alt="Energy Efficient Fish Navigation in Turbulent Flow" width="400" height="200">
+  <br><a style="margin-left: -6em" style="margin-right: 8em" target="_blank" href="https://colab.research.google.com/github/Tim-Salzmann/l4casadi/blob/main/examples/nerf_trajectory_optimization/NeRF_Trajectory_Optimization.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+  <a style="margin-left: 14em" target="_blank" href="https://colab.research.google.com/github/Tim-Salzmann/l4casadi/blob/main/examples/fish_turbulent_flow/Fish_Turbulent_Flow.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+  <p><i>Two L4CasADi examples: Collision-free trajectory through a NeRF and Navigation in Turbulent Flow</i></p>
+</div>
+
+
 [Projects using L4CasADi](#projects-using-l4casadi)\
 [Installation](#installation)\
 [Examples](#examples)\
 [Real-time L4CasADi](#real-time-l4casadi)
 
-If you use this framework please cite our paper
+If you use this framework please cite the following two paper
 ```
 @article{salzmann2023neural,
   title={Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms},
@@ -23,6 +32,16 @@ If you use this framework please cite our paper
   journal={IEEE Robotics and Automation Letters},
   doi={10.1109/LRA.2023.3246839},
   year={2023}
+}
+```
+
+```
+@article{salzmann2023l4casadi,
+  title={Learning for CasADi: Data-driven Models in Numerical Optimization}, 
+  author={Tim Salzmann and Jon Arrizabalaga and Joel Andersson and Marco Pavone and Markus Ryll},
+  year={2023},
+  eprint={2312.05873},
+  archivePrefix={arXiv},
 }
 ```
 
@@ -86,6 +105,8 @@ splitting them inside the PyTorch function.
 To use GPU (CUDA) simply pass `device="cuda"` to the `L4CasADi` constructor.
 
 Further examples:
+- Collision-free minimum snap optimized trajectory through a NeRF: [examples/nerf_trajectory_optimization](/examples/nerf_trajectory_optimization)
+- Energy Efficient Fish Navigation in Turbulent Flow: [examples/fish_turbulent_flow](/examples/fish_turbulent_flow)
 - Simple nonlinear programming with L4CasADi model as objective and constraints: [examples/simple_nlp.py](/examples/simple_nlp.py)
 - L4CasADi in pure C(++) projects: [examples/cpp_executable](/examples/cpp_usage)
 - Use PyTorch L4CasADi Model in Matlab: [examples/matlab](/examples/matlab)
