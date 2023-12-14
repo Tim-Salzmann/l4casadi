@@ -2,7 +2,12 @@ import os
 import pathlib
 import platform
 import shutil
-from importlib.resources import files
+
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files   # type: ignore[no-redef]
+
 from typing import Union, Optional, Callable, Text, Tuple
 
 import casadi as cs

@@ -1,4 +1,7 @@
-from importlib.resources import files
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files   # type: ignore[no-redef]
 import ctypes
 
 from .l4casadi import L4CasADi, dynamic_lib_file_ending
