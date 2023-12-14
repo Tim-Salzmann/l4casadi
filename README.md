@@ -45,6 +45,18 @@ If you use this framework please cite the following two paper
 }
 ```
 
+## Potential Overhead
+While L4CasADi was designed with efficiency in mind by internally leveraging torch's C++ interface, this can still
+result in overhead, which can be disproportionate for small, simple models. Thus, L4CasADi additionally provides a
+NaiveL4CasADiModule which directly recreates the PyTorch computational graph using CasADi operations and copies the
+weights --- leading to a pure C computational graph without context switches to torch. However, this approach is
+limited to a small predefined subset of PyTorch operations --- only Multi-Layer-Perceptron style models and inference
+on CPU are supported.
+
+The torch framework overhead dominates for networks smaller than three hidden layers, each with 64
+neurons (or equivalent). For models smaller than this size we recommend using the NaiveL4CasADiModule
+(see [here](#naive-l4casadi)). For larger models, the overhead becomes negligible and L4CasADi should be used.
+
 ## Projects using L4CasADi
 - Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms <br/> [Paper](https://arxiv.org/pdf/2203.07747.pdf) | [Code](https://github.com/TUM-AAS/neural-mpc)
 - Neural Potential Field for Obstacle-Aware Local Motion Planning <br/> [Paper](https://arxiv.org/pdf/2310.16362.pdf) | [Video](https://www.youtube.com/watch?v=KL3bfvUwGqs) | [Code](https://github.com/cog-isa/NPField)
