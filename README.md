@@ -7,22 +7,29 @@
 ---
 # Learning 4 CasADi Framework
 
-L4CasADi enables the use of PyTorch models and functions in a CasADi graph while supporting CasADi code generation 
-capabilities. The only requirement on the PyTorch model is to be traceable and differentiable.
+L4CasADi enables the seamless integration of PyTorch-learned models with CasADi for efficient and potentially
+hardware-accelerated numerical optimization.
+The only requirement on the PyTorch model is to be traceable and differentiable.
 
 <div align="center">
   <img src="./examples/nerf_trajectory_optimization/media/animation.gif" alt="Collision-free minimum snap optimized trajectory through a NeRF" width="200" height="200">
   <img src="./examples/fish_turbulent_flow/media/trajectory_generation_vorticity.gif" alt="Energy Efficient Fish Navigation in Turbulent Flow" width="400" height="200">
-  <br><a style="margin-left: -6em" style="margin-right: 8em" target="_blank" href="https://colab.research.google.com/github/Tim-Salzmann/l4casadi/blob/main/examples/nerf_trajectory_optimization/NeRF_Trajectory_Optimization.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-  <a style="margin-left: 14em" target="_blank" href="https://colab.research.google.com/github/Tim-Salzmann/l4casadi/blob/main/examples/fish_turbulent_flow/Fish_Turbulent_Flow.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+  <br><a target="_blank" href="https://colab.research.google.com/github/Tim-Salzmann/l4casadi/blob/main/examples/nerf_trajectory_optimization/NeRF_Trajectory_Optimization.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a target="_blank" href="https://colab.research.google.com/github/Tim-Salzmann/l4casadi/blob/main/examples/fish_turbulent_flow/Fish_Turbulent_Flow.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <p><i>Two L4CasADi examples: Collision-free trajectory through a NeRF and Navigation in Turbulent Flow</i></p>
 </div>
 
+arXiv: [Learning for CasADi: Data-driven Models in Numerical Optimization](https://arxiv.org/pdf/2312.05873.pdf)
 
-[Projects using L4CasADi](#projects-using-l4casadi)\
-[Installation](#installation)\
-[Examples](#examples)\
-[Real-time L4CasADi](#real-time-l4casadi)
+## Table of Content
+- [Projects using L4CasADi](#projects-using-l4casadi)
+- [Installation](#installation)
+- [Online Learning](#online-learning-and-updating)
+- [Naive L4CasADi](#naive-l4casadi)
+- [Real-time L4CasADi](#real-time-l4casadi)
+- [Examples](#examples)
 
 If you use this framework please cite the following two paper
 ```
@@ -44,18 +51,6 @@ If you use this framework please cite the following two paper
   archivePrefix={arXiv},
 }
 ```
-
-## Potential Overhead
-While L4CasADi was designed with efficiency in mind by internally leveraging torch's C++ interface, this can still
-result in overhead, which can be disproportionate for small, simple models. Thus, L4CasADi additionally provides a
-NaiveL4CasADiModule which directly recreates the PyTorch computational graph using CasADi operations and copies the
-weights --- leading to a pure C computational graph without context switches to torch. However, this approach is
-limited to a small predefined subset of PyTorch operations --- only Multi-Layer-Perceptron style models and inference
-on CPU are supported.
-
-The torch framework overhead dominates for networks smaller than three hidden layers, each with 64
-neurons (or equivalent). For models smaller than this size we recommend using the NaiveL4CasADiModule
-(see [here](#naive-l4casadi)). For larger models, the overhead becomes negligible and L4CasADi should be used.
 
 ## Projects using L4CasADi
 - Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms <br/> [Paper](https://arxiv.org/pdf/2203.07747.pdf) | [Code](https://github.com/TUM-AAS/neural-mpc)
@@ -106,6 +101,43 @@ Install L4CasADi via `CUDACXX=<PATH_TO_NVCC> pip install l4casadi --no-build-iso
 
 ---
 
+## Online Learning and Updating
+L4CasADi supports updating the PyTorch model online in the CasADi graph. To use this feature, pass `mutable=True` when
+initializing a L4CasADi. To update the model, call the `update` function on the `L4CasADi` object.
+You can optionally pass an updated model as parameter. If no model is passed, the reference passed at
+initialization is assumed to be updated and will be used for the update.
+
+---
+
+## Naive L4CasADi
+
+While L4CasADi was designed with efficiency in mind by internally leveraging torch's C++ interface, this can still
+result in overhead, which can be disproportionate for small, simple models. Thus, L4CasADi additionally provides a
+`NaiveL4CasADiModule` which directly recreates the PyTorch computational graph using CasADi operations and copies the
+weights --- leading to a pure C computational graph without context switches to torch. However, this approach is
+limited to a small predefined subset of PyTorch operations --- only `MultiLayerPerceptron`
+models and CPU inference are supported.
+
+The torch framework overhead dominates for networks smaller than three hidden layers, each with 64
+neurons (or equivalent). For models smaller than this size we recommend using the NaiveL4CasADiModule.
+For larger models, the overhead becomes negligible and L4CasADi should be used.
+
+https://github.com/Tim-Salzmann/l4casadi/blob/59876b190941c8d43286b6eb3d710add6f14a1d2/examples/naive/readme.py#L5-L9
+
+---
+## Real-time L4CasADi
+Real-time L4Casadi (former `Approximated` approach in [ML-CasADi](https://github.com/TUM-AAS/ml-casadi)) is the underlying framework powering
+[Real-time Neural-MPC](https://arxiv.org/pdf/2203.07747). It replaces complex models with local Taylor approximations.
+For certain optimization procedures (such as MPC with multiple shooting nodes) this can lead to improved optimization times.
+However, `Real-time L4Casadi`, comes with many restrictions (only Python, no C(++) code generation, ...) and is therefore not
+a one-to-one replacement for `L4Casadi`. Rather it is a complementary framework for certain special use cases.
+
+More information [here](l4casadi/realtime).
+
+https://github.com/Tim-Salzmann/l4casadi/blob/62219f61375af4c4133167f1d8b138d90f678c32/l4casadi/realtime/examples/readme.py#L32-L43
+
+---
+
 ## Examples
 https://github.com/Tim-Salzmann/l4casadi/blob/23e07380e214f70b8932578317aa373d2216b57e/examples/readme.py#L28-L40
 
@@ -122,26 +154,6 @@ Further examples:
 - Simple nonlinear programming with L4CasADi model as objective and constraints: [examples/simple_nlp.py](/examples/simple_nlp.py)
 - L4CasADi in pure C(++) projects: [examples/cpp_executable](/examples/cpp_usage)
 - Use PyTorch L4CasADi Model in Matlab: [examples/matlab](/examples/matlab)
-
----
-
-## Naive L4CasADi
-
-For small models the overhead of context switches between PyTorch and CasADi can be significant even in pure C++.
-Thus, L4CasADi provides a `NaiveL4CasADiModule` which will directly re-create the PyTorch computational graph in C++
-and copies the weights. This, however is limited to a small subset of PyTorch operations - only `MultiLayerPerceptron`
-models and CPU inference are supported.
-
-https://github.com/Tim-Salzmann/l4casadi/blob/59876b190941c8d43286b6eb3d710add6f14a1d2/examples/naive/readme.py#L5-L9
-
----
-
-## Batch Dimension
-
-If your PyTorch model expects a batch dimension as first dimension (which most models do) you should pass
-`model_expects_batch_dim=True` to the `L4CasADi` constructor. The `MX` input to the L4CasADi component is then expected
-to be a vector of shape `[X, 1]`. L4CasADi will add a batch dimension of `1` automatically such that the input to the
-underlying PyTorch model is of shape `[1, X]`.
 
 ---
 
@@ -166,31 +178,19 @@ ocp.solver_options.model_external_shared_lib_name = l4c_model.name
 https://github.com/Tim-Salzmann/l4casadi/blob/421de6ef408267eed0fd2519248b2152b610d2cc/examples/acados.py#L156-L160
 
 ---
-## Real-time L4CasADi
-Real-time L4Casadi (former `Approximated` approach in [ML-CasADi](https://github.com/TUM-AAS/ml-casadi)) is the underlying framework powering
-[Real-time Neural-MPC](https://arxiv.org/pdf/2203.07747). It replaces complex models with local Taylor approximations.
-For certain optimization procedures (such as MPC with multiple shooting nodes) this can lead to improved optimization times.
-However, `Real-time L4Casadi`, comes with many restrictions (only Python, no C(++) code generation, ...) and is therefore not
-a one-to-one replacement for `L4Casadi`. Rather it is a complementary framework for certain special use cases.
 
-More information [here](l4casadi/realtime).
+## FYIs
 
-https://github.com/Tim-Salzmann/l4casadi/blob/62219f61375af4c4133167f1d8b138d90f678c32/l4casadi/realtime/examples/readme.py#L32-L43
+### Batch Dimension
+
+If your PyTorch model expects a batch dimension as first dimension (which most models do) you should pass
+`model_expects_batch_dim=True` to the `L4CasADi` constructor. The `MX` input to the L4CasADi component is then expected
+to be a vector of shape `[X, 1]`. L4CasADi will add a batch dimension of `1` automatically such that the input to the
+underlying PyTorch model is of shape `[1, X]`.
 
 ---
 
-## Warm Up
+### Warm Up
 
 Note that PyTorch builds the graph on first execution. Thus, the first call(s) to the CasADi function will be slow.
 You can warm up to the execution graph by calling the generated CasADi function one or multiple times before using it.
-
----
-
-## Roadmap
-Further development of this framework will be prioritized by popular demand. If a feature is important to your work
-please get in contact or create a pull request.
-
-Possible upcoming features include:
-```
-- Explicit multi input, multi output functions.
-```

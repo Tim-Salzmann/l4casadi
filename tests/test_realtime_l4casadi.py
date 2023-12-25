@@ -12,7 +12,7 @@ class DeepModel(torch.nn.Module):
         self.input_layer = torch.nn.Linear(dim_in, 512)
 
         hidden_layers = []
-        for i in range(20):
+        for i in range(5):
             hidden_layers.append(torch.nn.Linear(512, 512))
 
         self.ln = torch.nn.LayerNorm(512)

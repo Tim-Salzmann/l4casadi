@@ -12,7 +12,7 @@ class DeepModel(torch.nn.Module):
         self.input_layer = torch.nn.Linear(dim_in, 512)
 
         hidden_layers = []
-        for i in range(20):
+        for i in range(5):
             hidden_layers.append(torch.nn.Linear(512, 512))
 
         self.ln = torch.nn.LayerNorm(512)
@@ -142,3 +142,20 @@ class TestL4CasADi:
 
         assert np.allclose(l4c_out, torch_out[0, 0].detach().numpy())
 
+    def test_l4casadi_deep_model_online_update(self, deep_model):
+        rand_inp = torch.rand((1, deep_model.input_layer.in_features))
+
+        l4c_model = l4c.L4CasADi(deep_model, model_expects_batch_dim=True, mutable=True)
+
+        l4c_out_old = l4c_model(rand_inp.transpose(-2, -1).detach().numpy())
+
+        # Change model and online update L4CasADi
+        deep_model.input_layer.reset_parameters()
+        l4c_model.update()
+
+        torch_out = deep_model(rand_inp)
+
+        l4c_out = l4c_model(rand_inp.transpose(-2, -1).detach().numpy())
+
+        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
+        assert not np.allclose(l4c_out_old, torch_out.transpose(-2, -1).detach().numpy())

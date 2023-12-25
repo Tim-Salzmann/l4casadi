@@ -11,15 +11,27 @@ torch::Device cpu(torch::kCPU);
 
 class L4CasADi::L4CasADiImpl
 {
+    std::string model_path;
+    std::string model_prefix;
+
+    bool has_jac;
+    bool has_hess;
+
     torch::jit::script::Module forward_model;
     torch::jit::script::Module jac_model;
     torch::jit::script::Module hess_model;
 
     torch::Device device;
 
+    std::thread online_model_reloader_thread;
+    std::mutex model_update_mutex;
+    std::atomic<bool> reload_model_loop_running = false;
+
 public:
-    L4CasADiImpl(std::string model_path, std::string model_prefix, std::string device, bool has_jac, bool has_hess)
-        : device{torch::kCPU} {
+    L4CasADiImpl(std::string model_path, std::string model_prefix, std::string device, bool has_jac, bool has_hess,
+            bool model_is_mutable): device{torch::kCPU}, model_path{model_path}, model_prefix{model_prefix},
+                has_jac{has_jac}, has_hess{has_hess} {
+
         if (torch::cuda::is_available() && device.compare("cpu")) {
             std::cout << "CUDA is available! Using GPU " << device << "." << std::endl;
             this->device = torch::Device(device);
@@ -33,23 +45,53 @@ public:
             this->device = torch::Device(device);
         }
 
-        std::filesystem::path dir (model_path);
-        std::filesystem::path forward_model_file (model_prefix + "_forward.pt");
+        this->load_model_from_disk();
+
+        if (model_is_mutable) {
+            this->reload_model_loop_running = true;
+            this->online_model_reloader_thread = std::thread(&L4CasADiImpl::reload_runner, this);
+        }
+    }
+
+    ~ L4CasADiImpl() {
+        if (this->reload_model_loop_running == true) {
+            this->reload_model_loop_running = false;
+            this->online_model_reloader_thread.join();
+        }
+    }
+
+    void reload_runner() {
+        std::filesystem::path dir (this->model_path);
+        std::filesystem::path reload_file (this->model_prefix + ".reload");
+
+        while(this->reload_model_loop_running) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            if (std::filesystem::exists(dir / reload_file)) {
+                std::unique_lock<std::mutex> lock(this->model_update_mutex);
+                this->load_model_from_disk();
+                std::filesystem::remove(dir / reload_file);
+            }
+        }
+    }
+
+    void load_model_from_disk() {
+        std::filesystem::path dir (this->model_path);
+        std::filesystem::path forward_model_file (this->model_prefix + "_forward.pt");
         this->forward_model = torch::jit::load(dir / forward_model_file);
         this->forward_model.to(this->device);
         this->forward_model.eval();
         this->forward_model = torch::jit::optimize_for_inference(this->forward_model);
 
-        if (has_jac) {
-            std::filesystem::path jac_model_file (model_prefix + "_jacrev.pt");
+        if (this->has_jac) {
+            std::filesystem::path jac_model_file (this->model_prefix + "_jacrev.pt");
             this->jac_model = torch::jit::load(dir / jac_model_file);
             this->jac_model.to(this->device);
             this->jac_model.eval();
             this->jac_model = torch::jit::optimize_for_inference(this->jac_model);
         }
 
-        if (has_hess) {
-            std::filesystem::path hess_model_file (model_prefix + "_hess.pt");
+        if (this->has_hess) {
+            std::filesystem::path hess_model_file (this->model_prefix + "_hess.pt");
             this->hess_model = torch::jit::load(dir / hess_model_file);
             this->hess_model.to(this->device);
             this->hess_model.eval();
@@ -58,6 +100,7 @@ public:
     }
 
     torch::Tensor forward(torch::Tensor input) {
+        std::unique_lock<std::mutex> lock(this->model_update_mutex);
         c10::InferenceMode guard;
         std::vector<torch::jit::IValue> inputs;
         inputs.push_back(input.to(this->device));
@@ -65,6 +108,7 @@ public:
     }
 
     torch::Tensor jac(torch::Tensor input) {
+        std::unique_lock<std::mutex> lock(this->model_update_mutex);
         c10::InferenceMode guard;
         std::vector<torch::jit::IValue> inputs;
         inputs.push_back(input.to(this->device));
@@ -72,6 +116,7 @@ public:
     }
 
     torch::Tensor hess(torch::Tensor input) {
+        std::unique_lock<std::mutex> lock(this->model_update_mutex);
         c10::InferenceMode guard;
         std::vector<torch::jit::IValue> inputs;
         inputs.push_back(input.to(this->device));
@@ -80,8 +125,8 @@ public:
 };
 
 L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool model_expects_batch_dim, std::string device,
-        bool has_jac, bool has_hess):
-    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device, has_jac, has_hess)},
+        bool has_jac, bool has_hess, bool model_is_mutable):
+    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device, has_jac, has_hess, model_is_mutable)},
     model_expects_batch_dim{model_expects_batch_dim} {}
 
 void L4CasADi::forward(const double* in, int rows, int cols, double* out) {

@@ -2,6 +2,7 @@ import os
 import pathlib
 import platform
 import shutil
+import time
 
 try:
     from importlib.resources import files
@@ -36,7 +37,8 @@ class L4CasADi(object):
                  build_dir: Text = './_l4c_generated',
                  model_search_path: Optional[Text] = None,
                  with_jacobian: bool = True,
-                 with_hessian: bool = True,):
+                 with_hessian: bool = True,
+                 mutable: bool = False):
         """
         :param model: PyTorch model.
         :param model_expects_batch_dim: True if the PyTorch model expects a batch dimension. This is commonly True
@@ -50,6 +52,7 @@ class L4CasADi(object):
             different folder (or another device).
         :param with_jacobian: If True, the Jacobian of the model is exported.
         :param with_hessian: If True, the Hessian of the model is exported.
+        :param mutable: If True, enables updating the model online via the update method.
         """
         self.model = model
         self.naive = False
@@ -72,6 +75,40 @@ class L4CasADi(object):
 
         self._with_jacobian = with_jacobian
         self._with_hessian = with_hessian
+
+        self._mutable = mutable
+
+        self._input_shape: Optional[Tuple[int, int]] = None
+
+    def update(self, model: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
+        """
+        Updates the PyTorch model online.
+        :param model: Optional, new model. If None, old reference to model given to initializer will be used for update.
+        """
+
+        if not self._mutable:
+            raise RuntimeError('To update the model online, please initialize L4CasADi with `mutable=True`.')
+
+        if not self._built:
+            raise RuntimeError('L4CasADi has to be built first before the model can be updated.')
+
+        if model is not None:
+            self.model = model
+            if isinstance(self.model, torch.nn.Module):
+                self.model.eval().to(self.device)
+                for parameters in self.model.parameters():
+                    parameters.requires_grad = False
+
+        self.export_torch_traces(*self._input_shape)   # type: ignore[misc]
+
+        time.sleep(0.2)
+
+        # Create file on disk to signal C++ to reload the model
+        open(self.build_dir / f'{self.name}.reload', 'w').close()
+
+        # Wait until C++ has reloaded the model
+        while os.path.exists(self.build_dir / f'{self.name}.reload'):
+            time.sleep(0.01)
 
     def __call__(self, *args):
         return self.forward(*args)
@@ -179,6 +216,7 @@ class L4CasADi(object):
             'has_jac': 'true' if has_jac else 'false',
             'has_hess': 'true' if has_hess else 'false',
             'model_expects_batch_dim': 'true' if self.has_batch else 'false',
+            'model_is_mutable': 'true' if self._mutable else 'false',
         }
 
         render_casadi_c_template(
@@ -220,6 +258,10 @@ class L4CasADi(object):
             d_inp = torch.zeros((1, rows))
         else:
             d_inp = torch.zeros((rows, cols))
+
+        # Save input shape for online update.
+        self._input_shape = (rows, cols)
+
         d_inp = d_inp.to(self.device)
 
         out_folder = self.build_dir
