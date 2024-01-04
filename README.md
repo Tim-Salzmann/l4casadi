@@ -68,13 +68,14 @@ Independently if you install from source or via pip you will need to meet the fo
 `python -c "import torch; print(torch.__version__)"`
 
 ### Pip Install (CPU Only)
+- Ensure Torch CPU-version is installed\
+`pip install torch>=2.0 --index-url https://download.pytorch.org/whl/cpu`
 - Ensure all build dependencies are installed
 ```
 setuptools>=68.1
 scikit-build>=0.17
 cmake>=3.27
 ninja>=1.11
-torch>=2.0
 ```
 
 - Run\
