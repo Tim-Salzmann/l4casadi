@@ -266,7 +266,9 @@ class L4CasADi(object):
 
         out_folder = self.build_dir
 
-        torch.jit.trace(self.model, d_inp).save((out_folder / f'{self.name}_forward.pt').as_posix())
+        self._jit_compile_and_save(make_fx(functionalize(self.model, remove='mutations_and_views'))(d_inp),
+                                   (out_folder / f'{self.name}_forward.pt').as_posix(),
+                                   d_inp)
 
         exported_jacrev = False
         if self._with_jacobian:
