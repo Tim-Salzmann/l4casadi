@@ -77,14 +77,14 @@ public:
     void load_model_from_disk() {
         std::filesystem::path dir (this->model_path);
         std::filesystem::path forward_model_file (this->model_prefix + "_forward.pt");
-        this->forward_model = torch::jit::load(dir / forward_model_file);
+        this->forward_model = torch::jit::load((dir / forward_model_file).generic_string());
         this->forward_model.to(this->device);
         this->forward_model.eval();
         this->forward_model = torch::jit::optimize_for_inference(this->forward_model);
 
         if (this->has_jac) {
             std::filesystem::path jac_model_file (this->model_prefix + "_jacrev.pt");
-            this->jac_model = torch::jit::load(dir / jac_model_file);
+            this->jac_model = torch::jit::load((dir / jac_model_file).generic_string());
             this->jac_model.to(this->device);
             this->jac_model.eval();
             this->jac_model = torch::jit::optimize_for_inference(this->jac_model);
@@ -92,7 +92,7 @@ public:
 
         if (this->has_hess) {
             std::filesystem::path hess_model_file (this->model_prefix + "_hess.pt");
-            this->hess_model = torch::jit::load(dir / hess_model_file);
+            this->hess_model = torch::jit::load((dir / hess_model_file).generic_string());
             this->hess_model.to(this->device);
             this->hess_model.eval();
             this->hess_model = torch::jit::optimize_for_inference(this->hess_model);
