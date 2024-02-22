@@ -1,6 +1,5 @@
 #include <iostream>
 #include <memory>
-#include <experimental/propagate_const>
 
 #ifndef l4casadi_hpp
 #define l4casadi_hpp
@@ -18,7 +17,7 @@ public:
 
     // PImpl Idiom
     class L4CasADiImpl;
-    std::experimental::propagate_const<std::unique_ptr<L4CasADiImpl> > pImpl;
+    std::unique_ptr<L4CasADiImpl> pImpl;
 
 };
 
