@@ -25,7 +25,13 @@ from l4casadi.naive import NaiveL4CasADiModule
 
 
 def dynamic_lib_file_ending():
-    return '.dylib' if platform.system() == 'Darwin' else '.so'
+    system = platform.system()
+    if system == 'Darwin':
+        return '.dylib'
+    elif system == 'Linux':
+        return '.so'
+    elif system == 'Windows':
+        return '.dll'
 
 
 class L4CasADi(object):

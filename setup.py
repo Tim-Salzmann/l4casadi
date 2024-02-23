@@ -19,8 +19,8 @@ except ImportError:
 def compile_hook(manifest):
     lib = manifest[0]
     file_path = pathlib.Path(__file__).parent.resolve()
-    (pathlib.Path(__file__).parent.resolve() / 'l4casadi' / 'lib').mkdir(exist_ok=True)
-    (pathlib.Path(__file__).parent.resolve() / 'l4casadi' / 'include').mkdir(exist_ok=True)
+    (file_path / 'l4casadi' / 'lib').mkdir(exist_ok=True)
+    (file_path / 'l4casadi' / 'include').mkdir(exist_ok=True)
 
     # Copy lib
     shutil.copy(lib, file_path / 'l4casadi' / 'lib')
@@ -38,6 +38,7 @@ setup(
     package_data={'': [
         'lib/**.dylib',
         'lib/**.so',
+        'lib/**.dll',
         'include/**.hpp',
         'template_generation/templates/casadi_function.in.cpp'
     ]},
