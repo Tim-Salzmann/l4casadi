@@ -34,7 +34,7 @@ def example():
     casadi_sym_inp = cs.MX.sym('inp', 2)
 
     # First-order Taylor (Linear) approximation of the model as Casadi Function
-    l4c_model_order1 = l4c.RealTimeL4CasADi(pyTorch_model, approximation_order=1)
+    l4c_model_order1 = l4c.realtime.RealTimeL4CasADi(pyTorch_model, approximation_order=1)
     casadi_lin_approx_sym_out = l4c_model_order1(casadi_sym_inp)
     casadi_lin_approx_func = cs.Function('model2_lin',
                                          [casadi_sym_inp,
@@ -43,7 +43,7 @@ def example():
     casadi_lin_approx_param = l4c_model_order1.get_params(np.zeros((2,)))
 
     # Second-order Taylor (Quadratic) approximation of the model as Casadi Function
-    l4c_model_order2 = l4c.RealTimeL4CasADi(pyTorch_model, approximation_order=2)
+    l4c_model_order2 = l4c.realtime.RealTimeL4CasADi(pyTorch_model, approximation_order=2)
     casadi_quad_approx_sym_out = l4c_model_order2(casadi_sym_inp)
     casadi_quad_approx_func = cs.Function('model2_lin',
                                          [casadi_sym_inp,
