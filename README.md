@@ -98,7 +98,10 @@ CUDA installation requires nvcc to be installed which is part of the CUDA toolki
 `sudo apt-get -y install cuda-toolkit-XX-X` (where `XX-X` is your installed Cuda version - e.g. `12-3`).
 Once the CUDA toolkit is installed nvcc is commonly found at `/usr/local/cuda/bin/nvcc`.
 
-Install L4CasADi via `CUDACXX=<PATH_TO_NVCC> pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_NVCC> pip install . --no-build-isolation` to build from source.
+Make sure `nvcc -V` can be executed and run `pip install l4casadi --no-build-isolation` or `CUDACXX=<PATH_TO_NVCC> pip install . --no-build-isolation` to build from source.
+
+If `nvcc` is not automatically part of your path you can specify the `nvcc` path for L4CasADi.
+E.g. `CUDACXX=<PATH_TO_NVCC> pip install l4casadi --no-build-isolation`.
 
 ---
 
