@@ -55,6 +55,7 @@ If you use this framework please cite the following two paper
 ## Projects using L4CasADi
 - Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms <br/> [Paper](https://arxiv.org/pdf/2203.07747.pdf) | [Code](https://github.com/TUM-AAS/neural-mpc)
 - Neural Potential Field for Obstacle-Aware Local Motion Planning <br/> [Paper](https://arxiv.org/pdf/2310.16362.pdf) | [Video](https://www.youtube.com/watch?v=KL3bfvUwGqs) | [Code](https://github.com/cog-isa/NPField)
+- N-MPC for Deep Neural Network-Based Collision Avoidance exploiting Depth Images <br/> [Paper](https://arxiv.org/pdf/2402.13038.pdf) | [Code](https://github.com/ntnu-arl/colpred_nmpc)
 
 If your project is using L4CasADi and you would like to be featured here, please reach out.
 
