@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(L4CasADi)
 
-# Load CUDA if it is installed
-find_package(CUDAToolkit)
-find_package(CUDA)
+#if(NOT DEFINED ENV{DISABLE_CUDA})
+#    # Load CUDA if it is installed
+#    find_package(CUDAToolkit)
+#    find_package(CUDA)
+#endif ()
 
 if (WIN32)
     set (CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
