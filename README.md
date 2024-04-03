@@ -43,12 +43,11 @@ If you use this framework please cite the following two paper
 ```
 
 ```
-@article{salzmann2023l4casadi,
-  title={Learning for CasADi: Data-driven Models in Numerical Optimization}, 
-  author={Tim Salzmann and Jon Arrizabalaga and Joel Andersson and Marco Pavone and Markus Ryll},
-  year={2023},
-  eprint={2312.05873},
-  archivePrefix={arXiv},
+@inproceedings{{salzmann2024l4casadi,
+  title={Learning for CasADi: Data-driven Models in Numerical Optimization},
+  author={Salzmann, Tim and Arrizabalaga, Jon and Andersson, Joel and Pavone, Marco and Ryll, Markus},
+  booktitle={Learning for Dynamics and Control Conference (L4DC)},
+  year={2024}
 }
 ```
 
