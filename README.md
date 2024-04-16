@@ -23,6 +23,8 @@ The only requirement on the PyTorch model is to be traceable and differentiable.
 
 arXiv: [Learning for CasADi: Data-driven Models in Numerical Optimization](https://arxiv.org/pdf/2312.05873.pdf)
 
+Talk: [Youtube](https://youtu.be/UYdkRnGr8eM?si=KEPcFEL9b7Vk2juI&t=3348)
+
 ## Table of Content
 - [Projects using L4CasADi](#projects-using-l4casadi)
 - [Installation](#installation)
