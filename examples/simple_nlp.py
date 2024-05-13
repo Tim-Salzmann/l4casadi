@@ -10,7 +10,7 @@ x = cs.MX.sym("x", 2)
 # Form the NLP
 class PyTorchObjectiveModel(torch.nn.Module):
     def forward(self, input):
-        return torch.square(input[0]) + torch.square(input[1])
+        return torch.square(input[0]) + torch.square(input[1])[..., None]
 
 
 f = PyTorchObjectiveModel()  # objective
@@ -19,7 +19,7 @@ f = l4c.L4CasADi(f, name='f', model_expects_batch_dim=False)(x)
 
 class PyTorchConstraintModel(torch.nn.Module):
     def forward(self, input):
-        return input[0] + input[1] - 10
+        return (input[0] + input[1] - 10)[..., None]
 
 
 g = PyTorchConstraintModel()  # constraint
