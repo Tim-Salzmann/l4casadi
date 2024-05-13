@@ -74,7 +74,7 @@ jobs:
         name: Install and Test
         with:
           arch: aarch64
-          distro: ubuntu_latest
+          distro: ubuntu20.04
           install: |
             apt-get update
             apt-get install -y --no-install-recommends python3.9 python3-pip python-is-python3
