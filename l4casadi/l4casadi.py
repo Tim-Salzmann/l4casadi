@@ -14,9 +14,9 @@ from typing import Union, Optional, Callable, Text, Tuple
 import casadi as cs
 import torch
 try:
-    from torch.func import jacrev, hessian, functionalize
+    from torch.func import jacrev, jacfwd, functionalize
 except ImportError:
-    from functorch import jacrev, hessian, functionalize
+    from functorch import jacrev, jacfwd, functionalize
 from l4casadi.ts_compiler import ts_compile
 from torch.fx.experimental.proxy_tensor import make_fx
 
@@ -254,10 +254,16 @@ class L4CasADi(object):
             raise Exception(f'Compilation failed!\n\nAttempted to execute OS command:\n{os_cmd}\n\n')
 
     def _trace_jac_model(self, inp):
-        return make_fx(functionalize(jacrev(self.model), remove='mutations_and_views'))(inp)
+        return make_fx(functionalize(jacrev(self.model), remove='mutations_and_views'),
+                       _error_on_data_dependent_ops=False)(inp)
+
+    @staticmethod
+    def hessian(func):
+        return jacfwd(jacrev(func), randomness='same')
 
     def _trace_hess_model(self, inp):
-        return make_fx(functionalize(hessian(self.model), remove='mutations_and_views'))(inp)
+        return make_fx(functionalize(self.hessian(self.model), remove='mutations_and_views'),
+                       _error_on_data_dependent_ops=False)(inp)
 
     def export_torch_traces(self, rows: int, cols: int) -> Tuple[bool, bool]:
         if self.has_batch:
@@ -272,7 +278,8 @@ class L4CasADi(object):
 
         out_folder = self.build_dir
 
-        self._jit_compile_and_save(make_fx(functionalize(self.model, remove='mutations_and_views'))(d_inp),
+        self._jit_compile_and_save(make_fx(functionalize(self.model, remove='mutations_and_views'),
+                                           _error_on_data_dependent_ops=False)(d_inp),
                                    (out_folder / f'{self.name}_forward.pt').as_posix(),
                                    d_inp)
 
