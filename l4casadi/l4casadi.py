@@ -44,7 +44,8 @@ class L4CasADi(object):
                  model_search_path: Optional[Text] = None,
                  with_jacobian: bool = True,
                  with_hessian: bool = True,
-                 mutable: bool = False):
+                 mutable: bool = False,
+                 _error_on_data_dependent_ops: bool = True):
         """
         :param model: PyTorch model.
         :param model_expects_batch_dim: True if the PyTorch model expects a batch dimension. This is commonly True
@@ -59,6 +60,8 @@ class L4CasADi(object):
         :param with_jacobian: If True, the Jacobian of the model is exported.
         :param with_hessian: If True, the Hessian of the model is exported.
         :param mutable: If True, enables updating the model online via the update method.
+        :param _error_on_data_dependent_ops: This will be forwarded to all calls to `make_fx`. If the model has data
+            dependent operations, setting this flag to `False` will silence this error.
         """
         self.model = model
         self.naive = False
@@ -85,6 +88,8 @@ class L4CasADi(object):
         self._mutable = mutable
 
         self._input_shape: Optional[Tuple[int, int]] = None
+
+        self._error_on_data_dependent_ops = _error_on_data_dependent_ops
 
     def update(self, model: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
         """
@@ -255,15 +260,11 @@ class L4CasADi(object):
 
     def _trace_jac_model(self, inp):
         return make_fx(functionalize(jacrev(self.model), remove='mutations_and_views'),
-                       _error_on_data_dependent_ops=False)(inp)
-
-    @staticmethod
-    def hessian(func):
-        return jacfwd(jacrev(func), randomness='same')
+                       _error_on_data_dependent_ops=self._error_on_data_dependent_ops)(inp)
 
     def _trace_hess_model(self, inp):
-        return make_fx(functionalize(self.hessian(self.model), remove='mutations_and_views'),
-                       _error_on_data_dependent_ops=False)(inp)
+        return make_fx(functionalize(jacrev(jacrev(self.model)), remove='mutations_and_views'),
+                       _error_on_data_dependent_ops=self._error_on_data_dependent_ops)(inp)
 
     def export_torch_traces(self, rows: int, cols: int) -> Tuple[bool, bool]:
         if self.has_batch:
@@ -279,7 +280,7 @@ class L4CasADi(object):
         out_folder = self.build_dir
 
         self._jit_compile_and_save(make_fx(functionalize(self.model, remove='mutations_and_views'),
-                                           _error_on_data_dependent_ops=False)(d_inp),
+                                           _error_on_data_dependent_ops=self._error_on_data_dependent_ops)(d_inp),
                                    (out_folder / f'{self.name}_forward.pt').as_posix(),
                                    d_inp)
 

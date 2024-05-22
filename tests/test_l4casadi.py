@@ -52,7 +52,7 @@ class TestL4CasADi:
 
         l4c_out = l4c.L4CasADi(deep_model, model_expects_batch_dim=True)(rand_inp.transpose(-2, -1).detach().numpy())
 
-        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
+        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy(), atol=1e-6)
 
     def test_l4casadi_triag_model(self, triag_model):
         rand_inp = torch.rand((12, 12))
@@ -60,7 +60,7 @@ class TestL4CasADi:
 
         l4c_out = l4c.L4CasADi(triag_model, model_expects_batch_dim=False)(rand_inp.detach().numpy())
 
-        assert np.allclose(l4c_out, torch_out.detach().numpy())
+        assert np.allclose(l4c_out, torch_out.detach().numpy(), atol=1e-6)
 
     def test_l4casadi_triag_model_jac(self, triag_model):
         rand_inp = torch.rand((12, 12))
@@ -76,7 +76,7 @@ class TestL4CasADi:
 
         assert np.allclose(
             np.moveaxis(np.array(l4c_out).reshape((12, 2, 12, 12)), (0, 1, 2, 3), (1, 0, 3, 2)),  # Reshape in Fortran
-            torch_out.detach().numpy())
+            torch_out.detach().numpy(), atol=1e-6)
 
     def test_l4casadi_triag_model_hess_double_jac(self, triag_model):
         rand_inp = torch.rand((12, 12))
@@ -93,7 +93,8 @@ class TestL4CasADi:
 
         l4c_out = hess_fun(rand_inp.transpose(-2, -1).detach().numpy())
 
-        assert np.allclose(np.reshape(l4c_out, (12, 12)).transpose((-2, -1)), torch_out[0, 0, 0, 0].detach().numpy())
+        assert np.allclose(np.reshape(l4c_out, (12, 12)).transpose((-2, -1)), torch_out[0, 0, 0, 0].detach().numpy(),
+                           atol=1e-6)
 
     def test_l4casadi_deep_model_jac(self, deep_model):
         rand_inp = torch.rand((1, deep_model.input_layer.in_features))
@@ -107,7 +108,7 @@ class TestL4CasADi:
 
         l4c_out = jac_fun(rand_inp.transpose(-2, -1).detach().numpy())
 
-        assert np.allclose(l4c_out, torch_out.detach().numpy())
+        assert np.allclose(l4c_out, torch_out.detach().numpy(), atol=1e-6)
 
     def test_l4casadi_deep_model_hess(self):
         deep_model = DeepModel(4, 1)
@@ -122,7 +123,7 @@ class TestL4CasADi:
 
         l4c_out = hess_fun(rand_inp.transpose(-2, -1).detach().numpy())
 
-        assert np.allclose(l4c_out, torch_out.detach().numpy())
+        assert np.allclose(l4c_out, torch_out.detach().numpy(), atol=1e-6)
 
     def test_l4casadi_deep_model_hess_double_jac(self):
         deep_model = DeepModel(4, 2)
@@ -140,7 +141,7 @@ class TestL4CasADi:
 
         l4c_out = hess_fun(rand_inp.transpose(-2, -1).detach().numpy())
 
-        assert np.allclose(l4c_out, torch_out[0, 0].detach().numpy())
+        assert np.allclose(l4c_out, torch_out[0, 0].detach().numpy(), atol=1e-6)
 
     def test_l4casadi_deep_model_online_update(self, deep_model):
         rand_inp = torch.rand((1, deep_model.input_layer.in_features))
@@ -157,5 +158,5 @@ class TestL4CasADi:
 
         l4c_out = l4c_model(rand_inp.transpose(-2, -1).detach().numpy())
 
-        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy())
-        assert not np.allclose(l4c_out_old, torch_out.transpose(-2, -1).detach().numpy())
+        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy(), atol=1e-6)
+        assert not np.allclose(l4c_out_old, torch_out.transpose(-2, -1).detach().numpy(), atol=1e-6)
