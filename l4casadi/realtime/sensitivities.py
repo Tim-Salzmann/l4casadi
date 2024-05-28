@@ -1,6 +1,7 @@
 from typing import Callable
 
 import torch
+
 try:
     import torch.func as functorch
 except ImportError:
@@ -28,15 +29,22 @@ def batched_jacobian(func: Callable, inputs: torch.Tensor, create_graph=False, r
 
     """
 
+    if inputs.shape[0] == 1:
+        vmap_randomness = 'same'
+    else:
+        vmap_randomness = 'different'
+
     if not create_graph:
         with torch.no_grad():
             if not return_func_output:
                 return functorch.vmap(functorch.jacrev(func))(inputs)
-            return functorch.vmap(functorch.jacrev(aux_function(func), has_aux=True))(inputs)
+            return functorch.vmap(functorch.jacrev(aux_function(func), has_aux=True), randomness=vmap_randomness)(
+                inputs[:, None])
     else:
         if not return_func_output:
             return functorch.vmap(functorch.jacrev(func))(inputs)
-        return functorch.vmap(functorch.jacrev(aux_function(func), has_aux=True))(inputs)
+        return functorch.vmap(functorch.jacrev(aux_function(func), has_aux=True), randomness=vmap_randomness)(
+            inputs[:, None])
 
 
 def batched_hessian(func: Callable, inputs: torch.Tensor, create_graph=False,
@@ -53,34 +61,47 @@ def batched_hessian(func: Callable, inputs: torch.Tensor, create_graph=False,
     Returns: Hessian
 
     """
+
+    if inputs.shape[0] == 1:
+        vmap_randomness = 'same'
+    else:
+        vmap_randomness = 'different'
+
     def aux_function_jac(func):
         def inner_aux(inputs):
             out = func(inputs)
             return out[0], (out[0], out[1])
+
         return inner_aux
 
     if not create_graph:
         with torch.no_grad():
             if not return_func_output and not return_jacobian:
-                return functorch.vmap(functorch.jacrev(functorch.jacrev(func)))(inputs)
+                return functorch.vmap(functorch.jacrev(functorch.jacrev(func)), randomness=vmap_randomness)(
+                    inputs[:, None])
             elif not return_func_output and return_jacobian:
-                return functorch.vmap(functorch.jacrev(aux_function_jac(functorch.jacrev(func)), has_aux=True))(inputs)
+                return functorch.vmap(functorch.jacrev(aux_function_jac(functorch.jacrev(func)), has_aux=True),
+                                      randomness=vmap_randomness)(inputs[:, None])
             elif return_func_output and not return_jacobian:
-                return functorch.vmap(functorch.jacrev(functorch.jacrev(aux_function(func), has_aux=True)))(inputs)
+                return functorch.vmap(functorch.jacrev(functorch.jacrev(aux_function(func), has_aux=True)),
+                                      randomness=vmap_randomness)(inputs[:, None])
             elif return_func_output and return_jacobian:
                 (hessian, (jacobian, value)) = functorch.vmap(
                     functorch.jacrev(aux_function_jac(functorch.jacrev(aux_function(func), has_aux=True)),
-                                     has_aux=True))(inputs)
+                                     has_aux=True), randomness=vmap_randomness)(inputs[:, None])
                 return hessian, jacobian, value
     else:
         if not return_func_output and not return_jacobian:
-            return functorch.vmap(functorch.jacrev(functorch.jacrev(func)))(inputs)
+            return functorch.vmap(functorch.jacrev(functorch.jacrev(func)), randomness=vmap_randomness)(inputs)
         elif not return_func_output and return_jacobian:
-            return functorch.vmap(functorch.jacrev(aux_function_jac(functorch.jacrev(func)), has_aux=True))(inputs)
+            return functorch.vmap(functorch.jacrev(aux_function_jac(functorch.jacrev(func)), has_aux=True),
+                                  randomness=vmap_randomness)(inputs)
         elif return_func_output and not return_jacobian:
-            return functorch.vmap(functorch.jacrev(functorch.jacrev(aux_function(func), has_aux=True)))(inputs)
+            return functorch.vmap(functorch.jacrev(functorch.jacrev(aux_function(func), has_aux=True)),
+                                  randomness=vmap_randomness)(inputs)
         elif return_func_output and return_jacobian:
             (hessian, (jacobian, value)) = functorch.vmap(
-                functorch.jacrev(aux_function_jac(functorch.jacrev(aux_function(func), has_aux=True)), has_aux=True))(
+                functorch.jacrev(aux_function_jac(functorch.jacrev(aux_function(func), has_aux=True)), has_aux=True),
+                randomness=vmap_randomness)(
                 inputs)
             return hessian, jacobian, value
