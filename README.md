@@ -2,8 +2,6 @@
 ![L4CasADi CI](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci.yaml/badge.svg)
 ![Downloads](https://img.shields.io/pypi/dm/l4casadi.svg)
 
-**Due to a bug, Hessians for functions with non-scalar outputs were wrong prior to version 1.3.0*
-
 ---
 # Learning 4 CasADi Framework
 
@@ -28,9 +26,10 @@ Talk: [Youtube](https://youtu.be/UYdkRnGr8eM?si=KEPcFEL9b7Vk2juI&t=3348)
 ## Table of Content
 - [Projects using L4CasADi](#projects-using-l4casadi)
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Online Learning](#online-learning-and-updating)
-- [Naive L4CasADi](#naive-l4casadi)
-- [Real-time L4CasADi](#real-time-l4casadi)
+- [Naive L4CasADi](#naive-l4casadi) - Use this for small Multi Layer Perceptron Models.
+- [Real-time L4CasADi](#real-time-l4casadi) - Use this for fast MPC with Acados.
 - [Examples](#examples)
 
 If you use this framework please cite the following two paper
@@ -105,6 +104,19 @@ Make sure `nvcc -V` can be executed and run `pip install l4casadi --no-build-iso
 
 If `nvcc` is not automatically part of your path you can specify the `nvcc` path for L4CasADi.
 E.g. `CUDACXX=<PATH_TO_NVCC> pip install l4casadi --no-build-isolation`.
+
+---
+
+## Quick Start
+
+Defining an L4CasADi model in Python given a pre-defined PyTorch model is as easy as
+```python
+import l4casadi as l4c
+
+l4c_model = l4c.L4CasADi(pyTorch_model, device='cpu')
+```
+
+where the architecture of the PyTorch model is unrestricted and large models can be accelerated with dedicated hardware.
 
 ---
 
