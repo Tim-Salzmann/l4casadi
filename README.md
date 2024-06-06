@@ -57,6 +57,7 @@ If you use this framework please cite the following two paper
 - Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms <br/> [Paper](https://arxiv.org/pdf/2203.07747.pdf) | [Code](https://github.com/TUM-AAS/neural-mpc)
 - Neural Potential Field for Obstacle-Aware Local Motion Planning <br/> [Paper](https://arxiv.org/pdf/2310.16362.pdf) | [Video](https://www.youtube.com/watch?v=KL3bfvUwGqs) | [Code](https://github.com/cog-isa/NPField)
 - N-MPC for Deep Neural Network-Based Collision Avoidance exploiting Depth Images <br/> [Paper](https://arxiv.org/pdf/2402.13038.pdf) | [Code](https://github.com/ntnu-arl/colpred_nmpc)
+- Reinforcement Learning based MPC with Neural Dynamical Models <br/> [Paper](https://folk.ntnu.no/skoge/publications/2024/adhau-ecc24/ECC24_0903_FI.pdf)
 
 If your project is using L4CasADi and you would like to be featured here, please reach out.
 
@@ -65,7 +66,7 @@ If your project is using L4CasADi and you would like to be featured here, please
 ### Prerequisites
 Independently if you install from source or via pip you will need to meet the following requirements:
 
-- Working build system: CMake compatible C++ compiler.
+- Working build system: CMake compatible C++ compiler (GCC version 10 or higher).
 - PyTorch (`>=2.0`) installation in your python environment.\
 `python -c "import torch; print(torch.__version__)"`
 
