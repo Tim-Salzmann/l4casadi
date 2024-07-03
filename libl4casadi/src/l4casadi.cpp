@@ -124,18 +124,13 @@ public:
     }
 };
 
-L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, bool model_expects_batch_dim, std::string device,
+L4CasADi::L4CasADi(std::string model_path, std::string model_prefix, std::string device,
         bool has_jac, bool has_hess, bool model_is_mutable):
-    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device, has_jac, has_hess, model_is_mutable)},
-    model_expects_batch_dim{model_expects_batch_dim} {}
+    pImpl{std::make_unique<L4CasADiImpl>(model_path, model_prefix, device, has_jac, has_hess, model_is_mutable)} {}
 
 void L4CasADi::forward(const double* in, int rows, int cols, double* out) {
     torch::Tensor in_tensor;
-    if (this->model_expects_batch_dim) {
-        in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
-    } else {
-        in_tensor = torch::from_blob(( void * )in, {cols, rows}, at::kDouble).to(torch::kFloat).permute({1, 0});
-    }
+    in_tensor = torch::from_blob(( void * )in, {cols, rows}, at::kDouble).to(torch::kFloat).permute({1, 0});
 
     torch::Tensor out_tensor = this->pImpl->forward(in_tensor).to(torch::kDouble).permute({1, 0}).contiguous();
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
@@ -143,11 +138,8 @@ void L4CasADi::forward(const double* in, int rows, int cols, double* out) {
 
 void L4CasADi::jac(const double* in, int rows, int cols, double* out) {
     torch::Tensor in_tensor;
-    if (this->model_expects_batch_dim) {
-        in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
-    } else {
-        in_tensor = torch::from_blob(( void * )in, {cols, rows}, at::kDouble).to(torch::kFloat).permute({1, 0});
-    }
+    in_tensor = torch::from_blob(( void * )in, {cols, rows}, at::kDouble).to(torch::kFloat).permute({1, 0});
+
     // CasADi expects the return in Fortran order -> Transpose last two dimensions
     torch::Tensor out_tensor = this->pImpl->jac(in_tensor).to(torch::kDouble).permute({3, 2, 1, 0}).contiguous();
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
@@ -155,11 +147,7 @@ void L4CasADi::jac(const double* in, int rows, int cols, double* out) {
 
 void L4CasADi::hess(const double* in, int rows, int cols, double* out) {
     torch::Tensor in_tensor;
-    if (this->model_expects_batch_dim) {
-        in_tensor = torch::from_blob(( void * )in, {1, rows}, at::kDouble).to(torch::kFloat);
-    } else {
-        in_tensor = torch::from_blob(( void * )in, {cols, rows}, at::kDouble).to(torch::kFloat).permute({1, 0});
-    }
+    in_tensor = torch::from_blob(( void * )in, {cols, rows}, at::kDouble).to(torch::kFloat).permute({1, 0});
 
     // CasADi expects the return in Fortran order -> Transpose last two dimensions
     torch::Tensor out_tensor = this->pImpl->hess(in_tensor).to(torch::kDouble).permute({5, 4, 3, 2, 1, 0}).contiguous();

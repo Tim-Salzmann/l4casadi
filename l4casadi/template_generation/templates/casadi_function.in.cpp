@@ -1,6 +1,6 @@
 #include <l4casadi.hpp>
 
-L4CasADi l4casadi("{{ model_path }}", "{{ name }}", {{ model_expects_batch_dim }}, "{{ device }}", {{ has_jac }}, {{ has_hess }}, {{ model_is_mutable }});
+L4CasADi l4casadi("{{ model_path }}", "{{ name }}", "{{ device }}", {{ has_jac }}, {{ has_hess }}, {{ model_is_mutable }});
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,23 +32,50 @@ extern "C" {
 #endif
 
 
-static const casadi_int casadi_s_in0[3] = { {{ rows_in }}, {{ cols_in }}, 1};
-static const casadi_int casadi_s_out0[3] = { {{ rows_out }}, {{ cols_out }}, 1};
+static const casadi_int {{ name }}_s_in0[3] = { {{ rows_in }}, {{ cols_in }}, 1};
+static const casadi_int {{ name }}_s_out0[3] = { {{ rows_out }}, {{ cols_out }}, 1};
 
+{% if has_jac == "true" and batched %}
+static const casadi_int jac_{{ name }}_s_out0[{{jac_ccs_len}}] = { {{ jac_ccs }}};
+CASADI_SYMBOL_EXPORT const casadi_int* jac_{{ name }}_sparsity_out(casadi_int i) {
+  switch (i) {
+    case 0: return jac_{{ name }}_s_out0;
+    default: return 0;
+  }
+}
+CASADI_SYMBOL_EXPORT casadi_int jac_{{ name }}_n_in(void) { return 2;}
+
+CASADI_SYMBOL_EXPORT casadi_int jac_{{ name }}_n_out(void) { return 1;}
+{% endif %}
+
+{% if has_hess == "true" and batched %}
+static const casadi_int jac_jac_{{ name }}_s_out0[{{hess_ccs_len}}] = { {{ hess_ccs }}};
+static const casadi_int jac_jac_{{ name }}_s_out1[{{hess_ccs2_len}}] = { {{ hess_ccs2 }}};
+CASADI_SYMBOL_EXPORT const casadi_int* jac_jac_{{ name }}_sparsity_out(casadi_int i) {
+  switch (i) {
+    case 0: return jac_jac_{{ name }}_s_out0;
+    case 1: return jac_jac_{{ name }}_s_out1;
+    default: return 0;
+  }
+}
+CASADI_SYMBOL_EXPORT casadi_int jac_jac_{{ name }}_n_in(void) { return 3;}
+
+CASADI_SYMBOL_EXPORT casadi_int jac_jac_{{ name }}_n_out(void) { return 2;}
+{% endif %}
 
 CASADI_SYMBOL_EXPORT int {{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.forward(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
 }
 
-{% if has_jac %}
+{% if has_jac == "true" %}
 CASADI_SYMBOL_EXPORT int jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.jac(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
 }
 {% endif %}
 
-{% if has_hess %}
+{% if has_hess == "true" %}
 CASADI_SYMBOL_EXPORT int jac_jac_{{ name }}(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   l4casadi.hess(arg[0], {{ rows_in }}, {{ cols_in }}, res[0]);
   return 0;
@@ -62,14 +89,14 @@ CASADI_SYMBOL_EXPORT casadi_int {{ name }}_n_out(void) { return 1;}
 
 CASADI_SYMBOL_EXPORT const casadi_int* {{ name }}_sparsity_in(casadi_int i) {
   switch (i) {
-    case 0: return casadi_s_in0;
+    case 0: return {{ name }}_s_in0;
     default: return 0;
   }
 }
 
 CASADI_SYMBOL_EXPORT const casadi_int* {{ name }}_sparsity_out(casadi_int i) {
   switch (i) {
-    case 0: return casadi_s_out0;
+    case 0: return {{ name }}_s_out0;
     default: return 0;
   }
 }

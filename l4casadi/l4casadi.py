@@ -37,7 +37,7 @@ def dynamic_lib_file_ending():
 class L4CasADi(object):
     def __init__(self,
                  model: Callable[[torch.Tensor], torch.Tensor],
-                 model_expects_batch_dim: bool = True,
+                 batched: bool = True,
                  device: Union[torch.device, Text] = 'cpu',
                  name: Text = 'l4casadi_f',
                  build_dir: Text = './_l4c_generated',
@@ -69,7 +69,7 @@ class L4CasADi(object):
             for parameters in self.model.parameters():
                 parameters.requires_grad = False
         self.name = name
-        self.has_batch = model_expects_batch_dim
+        self.batched = batched
         self.device = device if isinstance(device, str) else f'{device.type}:{device.index}'
 
         self.build_dir = pathlib.Path(build_dir)
@@ -124,10 +124,6 @@ class L4CasADi(object):
         return self.build_dir.absolute().as_posix()
 
     def forward(self, inp: Union[cs.MX, cs.SX, cs.DM]):
-        if self.has_batch:
-            if not inp.shape[-1] == 1:   # type: ignore[attr-defined]
-                raise ValueError("For batched PyTorch models only vector inputs are allowed.")
-
         if self.naive:
             out = self.model(inp)
         else:
@@ -190,26 +186,66 @@ class L4CasADi(object):
             f"{self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
         )
 
+    @staticmethod
+    def generate_batched_output_ccs(batch_size, input_size, output_size):
+        """
+        https://de.wikipedia.org/wiki/Harwell-Boeing-Format
+        :param batch_size: Size of batch dimension.
+        :param input_size: Size of input vector.
+        :param output_size: Size of output vector.
+        :return:
+            jac_ccs, hess_ccs
+        """
+        # Jacobian dimensions [batch_size * output_size, batch_size * input_size]
+        col_ptr = list(range(0, batch_size * input_size * output_size, output_size)) + [
+            batch_size * input_size * output_size]
+        row_ind = []
+        for _ in range(input_size):
+            for batch_idx in range(batch_size):
+                row_ind += list(range(batch_idx, batch_idx + batch_size * output_size, batch_size))
+
+        jac_ccs = [batch_size * output_size, batch_size * input_size] + col_ptr + row_ind
+
+        # Hessian dimensions [batch_size * output_size * batch_size * input_size, batch_size * input_size]
+        col_ptr = list(range(0, batch_size * input_size * output_size * input_size, input_size * output_size)) + [
+            batch_size * input_size * output_size * input_size]
+        row_ind = []
+        for _ in range(input_size):
+            for batch_idx in range(batch_size):
+                for jacobian_idx in range(0, batch_size * output_size * batch_size * input_size,
+                                          output_size * batch_size * batch_size):
+                    row_ind += list(range(jacobian_idx + batch_idx * batch_size * output_size + batch_idx,
+                                          (jacobian_idx + batch_idx * batch_size * output_size
+                                           + batch_idx + batch_size * output_size),
+                                          batch_size))
+
+        hess_ccs = [batch_size * output_size * batch_size * input_size, batch_size * input_size] + col_ptr + row_ind
+
+        hess_ccs2 = [batch_size * output_size * batch_size * input_size, batch_size * output_size] + [0] * (batch_size * output_size + 1)
+
+        return jac_ccs, hess_ccs, hess_ccs2
+
     def _generate_cpp_function_template(self, rows: int, cols: int, has_jac: bool, has_hess: bool):
-        if self.has_batch:
-            out_shape = self.model(torch.zeros(1, rows).to(self.device)).shape
-            rows_out = out_shape[-1]
-            cols_out = 1
-        else:
-            out_shape = self.model(torch.zeros(rows, cols).to(self.device)).shape
-            if len(out_shape) == 1:
-                rows_out = out_shape[0]
-                cols_out = 1
-            else:
-                rows_out, cols_out = out_shape[-2:]
+        out_shape = self.model(torch.zeros(rows, cols).to(self.device)).shape
+
         if len(out_shape) != 2:
             raise ValueError(f"""L4CasADi requires the model output to be a matrix (2 dimensions) but has 
-                              {len(out_shape)} dimensions. For models which expects a batch dimension, 
-                              the output should be a matrix of [1, d].""")
+                              {len(out_shape)} dimensions. Please add a extra dimension of size 1. 
+                              For models which expects a batch dimension, the output should be a matrix of [1, d].""")
+
+        rows_out, cols_out = out_shape
 
         model_path = (self.build_dir.absolute().as_posix()
                       if self._model_search_path is None
                       else self._model_search_path)
+
+        if self.batched:
+            if rows != rows:
+                raise ValueError(f"""When the model is batched the first dimension of input and output (batch dimension)
+                                    has to be the same.""")
+            jac_ccs, hess_ccs, hess_ccs2 = self.generate_batched_output_ccs(rows, cols, cols_out)
+        else:
+            jac_ccs, hess_ccs, hess_ccs2 = None, None, None
 
         gen_params = {
             'model_path': model_path,
@@ -221,8 +257,14 @@ class L4CasADi(object):
             'cols_out': cols_out,
             'has_jac': 'true' if has_jac else 'false',
             'has_hess': 'true' if has_hess else 'false',
-            'model_expects_batch_dim': 'true' if self.has_batch else 'false',
             'model_is_mutable': 'true' if self._mutable else 'false',
+            'batched': 'true' if self.batched else 'false',
+            'jac_ccs_len': len(jac_ccs) if self.batched else 0,
+            'jac_ccs': ', '.join(str(e) for e in jac_ccs) if self.batched else '',
+            'hess_ccs_len': len(hess_ccs) if self.batched else 0,
+            'hess_ccs': ', '.join(str(e) for e in hess_ccs) if self.batched else '',
+            'hess_ccs2_len': len(hess_ccs2) if self.batched else 0,
+            'hess_ccs2': ', '.join(str(e) for e in hess_ccs2) if self.batched else '',
         }
 
         render_casadi_c_template(
@@ -254,16 +296,21 @@ class L4CasADi(object):
             raise Exception(f'Compilation failed!\n\nAttempted to execute OS command:\n{os_cmd}\n\n')
 
     def _trace_jac_model(self, inp):
+        if self.batched:
+            def with_batch_dim(x):
+                return torch.func.vmap(jacrev(self.model))(x[:, None])[:, 0].permute(3, 2, 0, 1)
+            return make_fx(functionalize(with_batch_dim, remove='mutations_and_views'))(inp)
         return make_fx(functionalize(jacrev(self.model), remove='mutations_and_views'))(inp)
 
     def _trace_hess_model(self, inp):
+        if self.batched:
+            def with_batch_dim(x):
+                return torch.func.vmap(jacrev(jacrev(self.model)))(x[:, None])[:, 0].permute(1, 3, 2, 0, 4, 5)
+            return make_fx(functionalize(with_batch_dim, remove='mutations_and_views'))(inp)
         return make_fx(functionalize(jacrev(jacrev(self.model)), remove='mutations_and_views'))(inp)
 
     def export_torch_traces(self, rows: int, cols: int) -> Tuple[bool, bool]:
-        if self.has_batch:
-            d_inp = torch.zeros((1, rows))
-        else:
-            d_inp = torch.zeros((rows, cols))
+        d_inp = torch.zeros((rows, cols))
 
         # Save input shape for online update.
         self._input_shape = (rows, cols)
