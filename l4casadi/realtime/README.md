@@ -12,7 +12,7 @@ The necessary parameters to update the approximation can be inferenced in parall
 This makes this approach efficient for large models where multiple approximations are used in parallel in an optimization (MPC with multiple shooting nodes).
 
 ## Real-time L4CasADi in Acados MPC
-We provide a example of how to use Real-time L4CasADi in Acados MPC in this [example](../../../examples/realtime/mpc_mlp_example.py).
+We provide a example of how to use Real-time L4CasADi in Acados MPC in this [example](../../examples/realtime/mpc_mlp_example.py).
 Note that this is a dummy example of a single integrator with a learned residual dynamic set to zero. However, it
 demonstrates the integration of RealTimeL4CasADi in Acados (RTI-)MPC.
 
