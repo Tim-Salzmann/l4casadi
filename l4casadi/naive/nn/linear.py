@@ -6,8 +6,7 @@ from l4casadi.naive import NaiveL4CasADiModule
 
 class Linear(NaiveL4CasADiModule, torch.nn.Linear):
     def cs_forward(self, x):
-        assert x.shape[1] == 1, 'Casadi can not handle batches.'
-        y = cs.mtimes(self.weight.detach().numpy(), x)
+        y = cs.mtimes(x, self.weight.transpose(1, 0).detach().numpy())
         if self.bias is not None:
-            y = y + self.bias.detach().numpy()
+            y = y + self.bias[None].repeat((x.shape[0], 1)).detach().numpy()
         return y

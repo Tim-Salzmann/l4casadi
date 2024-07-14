@@ -86,7 +86,7 @@ def trajectory_generator_solver(n, n_eval, L, warmup, threshold):
             f += cs.sum2(sk**2)
 
             # While having a maximum density (1.) of the NeRF as constraint.
-            lk = L(pk.T)
+            lk = L(pk)
             g = cs.horzcat(g, lk)
             lbg = cs.horzcat(lbg, cs.DM([-10e32]).T)
             ubg = cs.horzcat(ubg, cs.DM([threshold]).T)

@@ -1,5 +1,6 @@
 [![PyPI version](https://badge.fury.io/py/l4casadi.svg)](https://badge.fury.io/py/l4casadi)
 ![L4CasADi CI](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci.yaml/badge.svg)
+![L4CasADi v2](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci_v2.yaml/badge.svg)
 ![Downloads](https://img.shields.io/pypi/dm/l4casadi.svg)
 
 ---
@@ -22,6 +23,27 @@ The only requirement on the PyTorch model is to be traceable and differentiable.
 arXiv: [Learning for CasADi: Data-driven Models in Numerical Optimization](https://arxiv.org/pdf/2312.05873.pdf)
 
 Talk: [Youtube](https://youtu.be/UYdkRnGr8eM?si=KEPcFEL9b7Vk2juI&t=3348)
+
+## L4CasADi v2 Breaking Changes
+After feedback from first use-cases L4CasADi v2 is designed with efficiency and simplicity in mind.
+
+This leads to the following breaking changes:
+
+- L4CasADi v2 can leverage PyTorch's batching capabilities for increased efficiency. When passing `batched=True`,
+L4CasADi will understand the **first** input dimension as batch dimension. Thus, first and second-order derivatives
+across elements of this dimension are assumed to be **sparse-zero**. To make use of this, instead of having multiple calls to a L4CasADi function in
+your CasADi program, batch all inputs together and have a single L4CasADi call. An example of this can be seen when
+comparing the [non-batched NeRF example](examples/nerf_trajectory_optimization/nerf_trajectory_optimization.py) with the
+[batched NeRF example](examples/nerf_trajectory_optimization/nerf_trajectory_optimization_batched.py) which is faster by
+a factor of 5-10x.
+- L4CasADi v2 will not change the shape of an input anymore as this was a source of confusion. The tensor forwarded to
+the PyTorch model will resemble the **exact dimension** of the input variable by CasADi. You are responsible to make
+sure that the PyTorch model handles a **two-dimensional** input matrix! Accordingly, the parameter
+`model_expects_batch_dim` is removed.
+- By default, L4CasADi v2 will not provide the Hessian, but the Jacobian of the Adjoint. This is sufficient for most
+many optimization problems. However, you can explicitly request the generation of the Hessian by passing
+`generate_jac_jac=True`.
+
 
 ## Table of Content
 - [Projects using L4CasADi](#projects-using-l4casadi)
@@ -202,14 +224,6 @@ https://github.com/Tim-Salzmann/l4casadi/blob/421de6ef408267eed0fd2519248b2152b6
 
 ## FYIs
 
-### Batch Dimension
-
-If your PyTorch model expects a batch dimension as first dimension (which most models do) you should pass
-`model_expects_batch_dim=True` to the `L4CasADi` constructor. The `MX` input to the L4CasADi component is then expected
-to be a vector of shape `[X, 1]`. L4CasADi will add a batch dimension of `1` automatically such that the input to the
-underlying PyTorch model is of shape `[1, X]`.
-
----
 
 ### Warm Up
 

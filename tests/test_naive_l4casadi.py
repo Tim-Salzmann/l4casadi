@@ -12,8 +12,8 @@ class TestNaiveL4CasADi:
         rand_inp = torch.rand((1, 2))
         torch_out = naive_mlp(rand_inp)
 
-        cs_inp = cs.DM(rand_inp.transpose(-2, -1).detach().numpy())
+        cs_inp = cs.DM(rand_inp.detach().numpy())
 
-        l4c_out = l4c.L4CasADi(naive_mlp, model_expects_batch_dim=True)(cs_inp)
+        l4c_out = l4c.L4CasADi(naive_mlp)(cs_inp)
 
-        assert np.allclose(l4c_out, torch_out.transpose(-2, -1).detach().numpy(), atol=1e-6)
+        assert np.allclose(l4c_out, torch_out.detach().numpy(), atol=1e-6)

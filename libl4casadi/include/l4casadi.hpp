@@ -7,13 +7,22 @@
 class L4CasADi
 {
 private:
-    bool model_expects_batch_dim;
+    int rows_in;
+    int cols_in;
+
+    int rows_out;
+    int cols_out;
 public:
-    L4CasADi(std::string, std::string, std::string = "cpu", bool = false, bool = false, bool = false);
+    L4CasADi(std::string, std::string, int, int, int, int, std::string = "cpu", bool = false, bool = false, bool = false, bool = false,
+        bool = false);
     ~L4CasADi();
-    void forward(const double*, int, int, double*);
-    void jac(const double*, int, int, double*);
-    void hess(const double*, int, int, double*);
+    void forward(const double*, double*);
+    void jac(const double*, double*);
+    void adj1(const double*, const double*, double*);
+    void jac_adj1(const double*, const double*, double*);
+    void jac_jac(const double*, double*);
+
+    void invalid_argument(std::string);
 
     // PImpl Idiom
     class L4CasADiImpl;
