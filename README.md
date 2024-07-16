@@ -1,6 +1,9 @@
 [![PyPI version](https://badge.fury.io/py/l4casadi.svg)](https://badge.fury.io/py/l4casadi)
 ![L4CasADi CI](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci.yaml/badge.svg)
+![L4CasADi v2](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci_v2.yaml/badge.svg)
 ![Downloads](https://img.shields.io/pypi/dm/l4casadi.svg)
+---
+[L4CasADi v2](https://github.com/Tim-Salzmann/l4casadi/tree/v2) is available as preview. It focuses on efficiency and batching capabilities.
 
 ---
 # Learning 4 CasADi Framework
