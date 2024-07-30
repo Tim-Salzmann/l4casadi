@@ -10,6 +10,7 @@ from density_nerf import DensityNeRF
 
 CASE = 1
 
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 def polynomial(n, n_eval):
     """Generates a symbolic function for a polynomial of degree n-1"""
@@ -175,7 +176,7 @@ def main():
         strict=False,
     )
     # -------------------------- Create L4CasADi Module -------------------------- #
-    l4c_nerf = l4c.L4CasADi(model)
+    l4c_nerf = l4c.L4CasADi(model, scripting=False)
 
     # ---------------------------------------------------------------------------- #
     #                                   NLP warmup                                   #

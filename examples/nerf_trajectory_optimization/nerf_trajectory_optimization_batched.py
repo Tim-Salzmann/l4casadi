@@ -8,6 +8,7 @@ import torch
 import l4casadi as l4c
 from density_nerf import DensityNeRF
 
+import os
 
 CASE = 1
 

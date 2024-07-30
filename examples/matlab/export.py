@@ -10,7 +10,7 @@ class TorchModel(torch.nn.Module):
 
 
 def generate():
-    l4casadi_model = l4c.L4CasADi(TorchModel(), model_expects_batch_dim=False, name='sin_l4c')
+    l4casadi_model = l4c.L4CasADi(TorchModel(), name='sin_l4c')
     sym_in = cs.MX.sym('x', 1, 1)
     l4casadi_model.build(sym_in)
     return

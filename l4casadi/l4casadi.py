@@ -48,6 +48,7 @@ class L4CasADi(object):
                  generate_adj1: bool = True,
                  generate_jac_adj1: bool = True,
                  generate_jac_jac: bool = False,
+                 scripting: bool = True,
                  mutable: bool = False):
         """
         :param model: PyTorch model.
@@ -65,10 +66,20 @@ class L4CasADi(object):
         :param generate_adj1: If True, the Adjoint of the model is tried to be generated.
         :param generate_jac_adj1: If True, the Jacobain of the Adjoint of the model is tried to be generated.
         :param generate_jac_jac: If True, the Hessian of the model is tried to be generated.
+        :param scripting: If True, the model is traced using TorchScript. If False, the model is compiled.
         :param mutable: If True, enables updating the model online via the update method.
         """
         if platform.system() == "Windows":
             warnings.warn("L4CasADi is currently not supported for Windows.")
+
+        if not scripting:
+            warnings.warn("L4CasADi with Torch AOT compilation is experimental at this point and might not work as "
+                          "expected.")
+            if torch.__version__ < torch.torch_version.TorchVersion('2.4.0'):
+                raise RuntimeError("For PyTorch versions < 2.4.0 L4CasADi only supports jit scripting. Please pass "
+                                   "scripting=True.")
+            import torch._inductor.config as config
+            config.freezing = True
 
         self.model = model
         self.naive = False
@@ -93,6 +104,8 @@ class L4CasADi(object):
         self._generate_adj1 = generate_adj1
         self._generate_jac_adj1 = generate_jac_adj1
         self._generate_jac_jac = generate_jac_jac
+
+        self._scripting = scripting
 
         self._mutable = mutable
 
@@ -284,6 +297,7 @@ class L4CasADi(object):
             'has_adj1': 'true' if has_adj1 else 'false',
             'has_jac_adj1': 'true' if has_jac_adj1 else 'false',
             'has_jac_jac': 'true' if has_jac_jac else 'false',
+            'scripting': 'true' if self._scripting else 'false',
             'model_is_mutable': 'true' if self._mutable else 'false',
             'batched': 'true' if self.batched else 'false',
             'jac_ccs_len': len(jac_ccs) if self.batched else 0,
@@ -372,7 +386,7 @@ class L4CasADi(object):
 
         out_folder = self.build_dir
 
-        self._jit_compile_and_save(make_fx(functionalize(self.model, remove='mutations_and_views'))(d_inp),
+        self.model_compile( make_fx(functionalize(self.model, remove='mutations_and_views'))(d_inp),
                                    (out_folder / f'{self.name}.pt').as_posix(),
                                    (d_inp,))
 
@@ -380,7 +394,7 @@ class L4CasADi(object):
         if self._generate_jac:
             jac_model = self._trace_jac_model(d_inp)
 
-            exported_jac = self._jit_compile_and_save(
+            exported_jac = self.model_compile(
                 jac_model,
                 (out_folder / f'jac_{self.name}.pt').as_posix(),
                 (d_inp,)
@@ -389,7 +403,7 @@ class L4CasADi(object):
         exported_adj1 = False
         if self._generate_adj1:
             adj1_model = self._trace_adj1_model()
-            exported_adj1 = self._jit_compile_and_save(
+            exported_adj1 = self.model_compile(
                 adj1_model,
                 (out_folder / f'adj1_{self.name}.pt').as_posix(),
                 (d_inp, d_out)
@@ -398,7 +412,7 @@ class L4CasADi(object):
         exported_jac_adj1 = False
         if self._generate_jac_adj1:
             jac_adj1_model = self._trace_jac_adj1_model()
-            exported_jac_adj1 = self._jit_compile_and_save(
+            exported_jac_adj1 = self.model_compile(
                 jac_adj1_model,
                 (out_folder / f'jac_adj1_{self.name}.pt').as_posix(),
                 (d_inp, d_out)
@@ -413,7 +427,7 @@ class L4CasADi(object):
                 pass
 
             if hess_model is not None:
-                exported_hess = self._jit_compile_and_save(
+                exported_hess = self.model_compile(
                     hess_model,
                     (out_folder / f'jac_jac_{self.name}.pt').as_posix(),
                     (d_inp,)
@@ -421,9 +435,27 @@ class L4CasADi(object):
 
         return exported_jac, exported_adj1, exported_jac_adj1, exported_hess
 
+    def model_compile(self, model, file_path: str, dummy_inp: Tuple[torch.Tensor, ...]):
+        if self._scripting:
+            return self._jit_compile_and_save(model, file_path, dummy_inp)
+        else:
+            return self._aot_compile_and_save(model, file_path, dummy_inp)
+
     @staticmethod
-    def _jit_compile_and_save(model, file_path: str, dummy_inp: torch.Tensor):
-        # TODO: Could switch to torch export https://pytorch.org/docs/stable/export.html
+    def _aot_compile_and_save(model, file_path: str, dummy_inp: Tuple[torch.Tensor, ...]):
+        try:
+            with torch.no_grad():
+                torch._export.aot_compile(
+                    model,
+                    dummy_inp,
+                    options={"aot_inductor.output_path": file_path[:-2] + 'so'},
+                )
+            return True
+        except:  # noqa
+            return False
+
+    @staticmethod
+    def _jit_compile_and_save(model, file_path: str, dummy_inp: Tuple[torch.Tensor, ...]):
         try:
             # Try scripting
             ts_compile(model).save(file_path)

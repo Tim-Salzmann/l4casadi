@@ -128,7 +128,7 @@ class MPC:
             ocp.cost.W = np.array([[1.]])
 
             # Trivial PyTorch index 0
-            l4c_y_expr = l4c.L4CasADi(lambda x: x[0], name='y_expr', model_expects_batch_dim=False)
+            l4c_y_expr = l4c.L4CasADi(lambda x: x[0], name='y_expr')
 
             ocp.model.cost_y_expr = l4c_y_expr(x)
             ocp.model.cost_y_expr_e = x[0]
