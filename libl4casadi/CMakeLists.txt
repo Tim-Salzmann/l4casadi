@@ -22,7 +22,7 @@ add_definitions(-DTORCH_VERSION_MINOR=${Torch_VERSION_MINOR})
 add_definitions(-DTORCH_VERSION_PATCH=${Torch_VERSION_PATCH})
 
 if (Torch_VERSION_MAJOR GREATER_EQUAL 1 AND Torch_VERSION_MINOR GREATER_EQUAL 4)
-    #add_definitions(-DENABLE_TORCH_COMPILE)
+    # add_definitions(-DENABLE_TORCH_COMPILE)
 endif ()
 if (USE_CUDA)
     add_definitions(-DUSE_CUDA)
