@@ -75,6 +75,7 @@ class L4CasADi(object):
         if not scripting:
             warnings.warn("L4CasADi with Torch AOT compilation is experimental at this point and might not work as "
                           "expected.")
+            raise RuntimeError("PyTorch compile is not supported yet as it does not seem stable.")
             if torch.__version__ < torch.torch_version.TorchVersion('2.4.0'):
                 raise RuntimeError("For PyTorch versions < 2.4.0 L4CasADi only supports jit scripting. Please pass "
                                    "scripting=True.")
@@ -386,7 +387,7 @@ class L4CasADi(object):
 
         out_folder = self.build_dir
 
-        self.model_compile( make_fx(functionalize(self.model, remove='mutations_and_views'))(d_inp),
+        self.model_compile(make_fx(functionalize(self.model, remove='mutations_and_views'))(d_inp),
                                    (out_folder / f'{self.name}.pt').as_posix(),
                                    (d_inp,))
 
