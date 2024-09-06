@@ -33,7 +33,7 @@ def compile_hook(manifest):
 setup(
     cmake_process_manifest_hook=compile_hook,
     cmake_source_dir='libl4casadi',
-    cmake_args=[f'-DCMAKE_TORCH_PATH={os.path.dirname(os.path.abspath(torch.__file__))}'],
+    cmake_args=['-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_TORCH_PATH={os.path.dirname(os.path.abspath(torch.__file__))}'],
     include_package_data=True,
     package_data={'': [
         'lib/**.dylib',

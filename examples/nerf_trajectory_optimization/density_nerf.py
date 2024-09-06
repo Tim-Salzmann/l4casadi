@@ -46,7 +46,7 @@ class DensityNeRF(nn.Module):
             [nn.Linear(self.input_ch, W)]
             + [
                 nn.Linear(W, W)
-                if i not in self.skips
+                if i != 4
                 else nn.Linear(W + self.input_ch, W)
                 for i in range(D - 1)
             ]
@@ -60,7 +60,7 @@ class DensityNeRF(nn.Module):
         for i, l in enumerate(self.pts_linears):
             h = self.pts_linears[i](h)
             h = F.relu(h)
-            if i in self.skips:
+            if i == 4:
                 h = torch.cat([input_pts, h], -1)
 
         alpha = self.alpha_linear(h)

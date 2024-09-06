@@ -8,9 +8,15 @@ import torch
 import l4casadi as l4c
 from density_nerf import DensityNeRF
 
+import os
+
 CASE = 1
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+DEVICE = 'cpu'
+
+if DEVICE != 'cpu':
+    torch.jit.set_fusion_strategy([('STATIC', 0)])
+
 
 def polynomial(n, n_eval):
     """Generates a symbolic function for a polynomial of degree n-1"""
@@ -75,10 +81,19 @@ def trajectory_generator_solver(n, n_eval, L, warmup, threshold):
     lbg = []
     ubg = []
 
+    ps = []
+    ss = []
     for k in range(n_eval):
         poly = f_poly(coeffs=X, xi=k / (n_eval - 1))
-        pk = poly["p"]
-        sk = poly["s"]
+        ps.append(poly["p"])
+        ss.append(poly["s"])
+
+    if not warmup:
+        ls = L(cs.vcat(ps))
+
+    for k in range(n_eval):
+        pk = ps[k]
+        sk = ss[k]
 
         if warmup:
             f += cs.sum2((pk - params[k, :]) ** 2)
@@ -87,7 +102,7 @@ def trajectory_generator_solver(n, n_eval, L, warmup, threshold):
             f += cs.sum2(sk**2)
 
             # While having a maximum density (1.) of the NeRF as constraint.
-            lk = L(pk)
+            lk = ls[k]#L(pk.T)
             g = cs.horzcat(g, lk)
             lbg = cs.horzcat(lbg, cs.DM([-10e32]).T)
             ubg = cs.horzcat(ubg, cs.DM([threshold]).T)
@@ -176,7 +191,7 @@ def main():
         strict=False,
     )
     # -------------------------- Create L4CasADi Module -------------------------- #
-    l4c_nerf = l4c.L4CasADi(model, scripting=False)
+    l4c_nerf = l4c.L4CasADi(model, device=DEVICE, batched=True)
 
     # ---------------------------------------------------------------------------- #
     #                                   NLP warmup                                   #
@@ -231,7 +246,10 @@ def main():
 
     # Solve nlp
     x_init = coeffs_warm[:, 1:].T.flatten()
+    import time
+    t = time.time()
     sol = nlp["solver"](x0=x_init, p=params_flat, lbg=nlp["lbg"], ubg=nlp["ubg"])
+    print(time.time()-t)
 
     # --------------------------------- Evaluate --------------------------------- #
     # Extract and evaluate solution
@@ -254,13 +272,13 @@ def main():
         indexing='ij'
     )
 
-    points = torch.stack(meshgrid, dim=-1).reshape(-1, 3)
+    points = torch.stack(meshgrid, dim=-1).reshape(-1, 3).to(DEVICE)
     with torch.no_grad():
-        density = model(points).detach()[..., 0]
-    points = points.numpy()
+        density = model(points).detach()[..., 0].cpu().numpy()
+    points = points.cpu().numpy()
 
     with torch.no_grad():
-        density_sol = model(torch.tensor(p_sol, dtype=torch.float32)).detach()[..., 0]
+        density_sol = model(torch.tensor(p_sol, dtype=torch.float32).to(DEVICE)).detach().cpu()[..., 0]
 
     print(f"Maximum Density in Solution: {density_sol.max()} < Threshold {optimization_threshold:.2f}")
 

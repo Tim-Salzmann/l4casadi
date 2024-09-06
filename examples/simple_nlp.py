@@ -14,7 +14,7 @@ class PyTorchObjectiveModel(torch.nn.Module):
 
 
 f = PyTorchObjectiveModel()  # objective
-f = l4c.L4CasADi(f, name='f', model_expects_batch_dim=False)(x)
+f = l4c.L4CasADi(f, name='f')(x)
 
 
 class PyTorchConstraintModel(torch.nn.Module):
@@ -23,7 +23,7 @@ class PyTorchConstraintModel(torch.nn.Module):
 
 
 g = PyTorchConstraintModel()  # constraint
-g = l4c.L4CasADi(g, name='g', model_expects_batch_dim=False)(x)
+g = l4c.L4CasADi(g, name='g')(x)
 
 nlp = {'x': x, 'f': f, 'g': g}
 
