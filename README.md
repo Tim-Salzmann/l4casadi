@@ -44,11 +44,11 @@ sure that the PyTorch model handles a **two-dimensional** input matrix! Accordin
 many optimization problems. However, you can explicitly request the generation of the Hessian by passing
 `generate_jac_jac=True`.
 
-L4CasADi v2 can use the new **torch compile** functionality starting from PyTorch 2.4. By passing `scripting=False`. This
+[//]: # (L4CasADi v2 can use the new **torch compile** functionality starting from PyTorch 2.4. By passing `scripting=False`. This
 will lead to a longer compile time on first L4CasADi function call but will lead to a overall faster
 execution. However, currently this functionality is experimental and not fully stable across all models. In the long
 term there is a good chance this will become the default over scripting once the functionality is stabilized by the
-Torch developers.
+Torch developers.)
 
 ## Table of Content
 - [Projects using L4CasADi](#projects-using-l4casadi)
