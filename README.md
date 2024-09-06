@@ -1,9 +1,6 @@
 [![PyPI version](https://badge.fury.io/py/l4casadi.svg)](https://badge.fury.io/py/l4casadi)
 ![L4CasADi CI](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci.yaml/badge.svg)
-![L4CasADi v2](https://github.com/Tim-Salzmann/l4casadi/actions/workflows/ci_v2.yaml/badge.svg)
 ![Downloads](https://img.shields.io/pypi/dm/l4casadi.svg)
----
-[L4CasADi v2](https://github.com/Tim-Salzmann/l4casadi/tree/v2) is available as preview. It focuses on efficiency and batching capabilities.
 
 ---
 # Learning 4 CasADi Framework
@@ -172,7 +169,7 @@ The torch framework overhead dominates for networks smaller than three hidden la
 neurons (or equivalent). For models smaller than this size we recommend using the NaiveL4CasADiModule.
 For larger models, the overhead becomes negligible and L4CasADi should be used.
 
-https://github.com/Tim-Salzmann/l4casadi/blob/59876b190941c8d43286b6eb3d710add6f14a1d2/examples/naive/readme.py#L5-L9
+https://github.com/Tim-Salzmann/l4casadi/blob/f7b16fba90f4d3ee53217b560f26b47e6b23e44a/examples/naive/readme.py#L5-L9
 
 ---
 ## Real-time L4CasADi
@@ -184,12 +181,12 @@ a one-to-one replacement for `L4Casadi`. Rather it is a complementary framework 
 
 More information [here](l4casadi/realtime).
 
-https://github.com/Tim-Salzmann/l4casadi/blob/62219f61375af4c4133167f1d8b138d90f678c32/l4casadi/realtime/examples/readme.py#L32-L43
+https://github.com/Tim-Salzmann/l4casadi/blob/f7b16fba90f4d3ee53217b560f26b47e6b23e44a/l4casadi/realtime/examples/readme.py#L32-L43
 
 ---
 
 ## Examples
-https://github.com/Tim-Salzmann/l4casadi/blob/23e07380e214f70b8932578317aa373d2216b57e/examples/readme.py#L28-L40
+https://github.com/Tim-Salzmann/l4casadi/blob/f7b16fba90f4d3ee53217b560f26b47e6b23e44a/examples/readme.py#L28-L40
 
 Please note that only `casadi.MX` symbolic variables are supported as input.
 
@@ -225,7 +222,7 @@ ocp.solver_options.model_external_shared_lib_dir = l4c_model.shared_lib_dir
 ocp.solver_options.model_external_shared_lib_name = l4c_model.name
 ```
 
-https://github.com/Tim-Salzmann/l4casadi/blob/421de6ef408267eed0fd2519248b2152b610d2cc/examples/acados.py#L156-L160
+https://github.com/Tim-Salzmann/l4casadi/blob/f7b16fba90f4d3ee53217b560f26b47e6b23e44a/examples/acados.py#L156-L160
 
 ---
 
