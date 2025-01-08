@@ -26,6 +26,16 @@ from l4casadi.template_generation import render_casadi_c_template
 from l4casadi.naive import NaiveL4CasADiModule
 
 
+def dynamic_lib_file_starting():
+    system = platform.system()
+    if system == 'Darwin':
+        return 'lib'
+    elif system == 'Linux':
+        return 'lib'
+    elif system == 'Windows':
+        return ''
+    
+
 def dynamic_lib_file_ending():
     system = platform.system()
     if system == 'Darwin':
