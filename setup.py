@@ -39,6 +39,7 @@ setup(
         'lib/**.dylib',
         'lib/**.so',
         'lib/**.dll',
+        'lib/**.lib',
         'include/**.hpp',
         'template_generation/templates/casadi_function.in.cpp'
     ]},

@@ -240,7 +240,7 @@ class L4CasADi(object):
             raise RuntimeError('L4CasADi model has not been built yet. Call `build` first.')
         self._cs_fun = cs.external(
             f'{self.name}',
-            f"{self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
+            f"{self.build_dir / f'{dynamic_lib_file_starting()}{self.name}'}{dynamic_lib_file_ending()}"
         )
 
     @staticmethod
@@ -329,19 +329,51 @@ class L4CasADi(object):
         include_dir = files('l4casadi') / 'include'
         lib_dir = file_dir / 'lib'
 
-        # call gcc
-        soname = 'install_name' if platform.system() == 'Darwin' else 'soname'
-        cxx11_abi = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
-        link_libl4casadi = " -ll4casadi" if not self.naive else ""
-        os_cmd = ("gcc"
-                  " -fPIC -shared"
-                  f" {self.build_dir / self.name}.cpp"
-                  f" -o {self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
-                  f" -I{include_dir} -L{lib_dir}"
-                  f" -Wl,-{soname},lib{self.name}{dynamic_lib_file_ending()}"
-                  f"{link_libl4casadi}"
-                  " -lstdc++ -std=c++17"
-                  f" -D_GLIBCXX_USE_CXX11_ABI={cxx11_abi}")
+        # If cmake is available on the system, use it to compile the dynamic library
+        if shutil.which('cmake'):
+            # get current working dir as posix
+            cwd = pathlib.Path('.').absolute()
+
+            cmake_content = f"""
+                cmake_minimum_required(VERSION 3.15)
+                project({self.name})
+                set(CMAKE_CXX_STANDARD 17)
+
+                include_directories({include_dir.as_posix()})
+                link_directories({lib_dir.as_posix()})
+
+                add_library({self.name} SHARED {self.name}.cpp)
+                target_link_libraries({self.name} l4casadi)
+
+                set_target_properties({self.name} PROPERTIES
+                    LIBRARY_OUTPUT_DIRECTORY {(cwd / self.build_dir).as_posix()}
+                    RUNTIME_OUTPUT_DIRECTORY {(cwd / self.build_dir).as_posix()}
+                )
+
+                install(TARGETS {self.name} DESTINATION {(cwd / self.build_dir).as_posix()})
+            """
+            with open(self.build_dir / "CMakeLists.txt", "w") as f:
+                f.write(cmake_content)  
+
+            os_cmd = (
+                f"cmake -S {self.build_dir} -B {self.build_dir} && "
+                f"cmake --build {self.build_dir} --config=Release && "
+                f"cmake --install {self.build_dir} --config=Release"
+            )
+        else:
+            # If cmake is not installed, fall back to manual compilation using gcc (previous implementation)
+            soname = 'install_name' if platform.system() == 'Darwin' else 'soname'
+            cxx11_abi = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
+            link_libl4casadi = " -ll4casadi" if not self.naive else ""
+            os_cmd = ("gcc"
+                    " -fPIC -shared"
+                    f" {self.build_dir / self.name}.cpp"
+                    f" -o {self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
+                    f" -I{include_dir} -L{lib_dir}"
+                    f" -Wl,-{soname},lib{self.name}{dynamic_lib_file_ending()}"
+                    f"{link_libl4casadi}"
+                    " -lstdc++ -std=c++17"
+                    f" -D_GLIBCXX_USE_CXX11_ABI={cxx11_abi}")
 
         status = os.system(os_cmd)
         if status != 0:
