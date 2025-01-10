@@ -79,9 +79,6 @@ class L4CasADi(object):
         :param scripting: If True, the model is traced using TorchScript. If False, the model is compiled.
         :param mutable: If True, enables updating the model online via the update method.
         """
-        if platform.system() == "Windows":
-            warnings.warn("L4CasADi is currently not supported for Windows.")
-
         if not scripting:
             warnings.warn("L4CasADi with Torch AOT compilation is experimental at this point and might not work as "
                           "expected.")
