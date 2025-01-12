@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubuntu-latest, ubuntu-20.04, macos-latest]
+        runs-on: [ubuntu-latest, ubuntu-20.04, macos-latest, windows-latest]
 
     name: Tests on ${{ matrix.runs-on }}
     steps:
