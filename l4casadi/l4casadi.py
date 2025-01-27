@@ -115,6 +115,8 @@ class L4CasADi(object):
 
         self._scripting = scripting
 
+        if mutable and platform.system() == "Windows":
+            raise RuntimeError('Online model update (mutable=True) is not supported on Windows.')
         self._mutable = mutable
 
         self._input_shape: Tuple[int, int] = (-1, -1)

@@ -1,5 +1,7 @@
 import numpy as np
+import platform
 import pytest
+import re
 import torch
 import casadi as cs
 import l4casadi as l4c
@@ -161,6 +163,10 @@ class TestL4CasADi:
     def test_l4casadi_deep_model_online_update(self, deep_model):
         rand_inp = torch.rand((1, deep_model.input_layer.in_features))
 
+        if platform.system() == 'Windows':
+            with pytest.raises(RuntimeError, match=re.escape('Online model update (mutable=True) is not supported on Windows.')):
+                l4c.L4CasADi(deep_model, mutable=True)
+            return
         l4c_model = l4c.L4CasADi(deep_model, mutable=True)
 
         l4c_out_old = l4c_model(rand_inp.detach().numpy())
