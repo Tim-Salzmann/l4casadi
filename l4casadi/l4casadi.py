@@ -26,6 +26,16 @@ from l4casadi.template_generation import render_casadi_c_template
 from l4casadi.naive import NaiveL4CasADiModule
 
 
+def dynamic_lib_file_starting():
+    system = platform.system()
+    if system == 'Darwin':
+        return 'lib'
+    elif system == 'Linux':
+        return 'lib'
+    elif system == 'Windows':
+        return ''
+    
+
 def dynamic_lib_file_ending():
     system = platform.system()
     if system == 'Darwin':
@@ -69,9 +79,6 @@ class L4CasADi(object):
         :param scripting: If True, the model is traced using TorchScript. If False, the model is compiled.
         :param mutable: If True, enables updating the model online via the update method.
         """
-        if platform.system() == "Windows":
-            warnings.warn("L4CasADi is currently not supported for Windows.")
-
         if not scripting:
             warnings.warn("L4CasADi with Torch AOT compilation is experimental at this point and might not work as "
                           "expected.")
@@ -108,6 +115,8 @@ class L4CasADi(object):
 
         self._scripting = scripting
 
+        if mutable and platform.system() == "Windows":
+            raise RuntimeError('Online model update (mutable=True) is not supported on Windows.')
         self._mutable = mutable
 
         self._input_shape: Tuple[int, int] = (-1, -1)
@@ -230,7 +239,7 @@ class L4CasADi(object):
             raise RuntimeError('L4CasADi model has not been built yet. Call `build` first.')
         self._cs_fun = cs.external(
             f'{self.name}',
-            f"{self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
+            f"{self.build_dir / f'{dynamic_lib_file_starting()}{self.name}'}{dynamic_lib_file_ending()}"
         )
 
     @staticmethod
@@ -319,20 +328,64 @@ class L4CasADi(object):
         include_dir = files('l4casadi') / 'include'
         lib_dir = file_dir / 'lib'
 
-        # call gcc
-        soname = 'install_name' if platform.system() == 'Darwin' else 'soname'
-        cxx11_abi = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
-        link_libl4casadi = " -ll4casadi" if not self.naive else ""
-        os_cmd = ("gcc"
-                  " -fPIC -shared"
-                  f" {self.build_dir / self.name}.cpp"
-                  f" -o {self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
-                  f" -I{include_dir} -L{lib_dir}"
-                  f" -Wl,-{soname},lib{self.name}{dynamic_lib_file_ending()}"
-                  f"{link_libl4casadi}"
-                  " -lstdc++ -std=c++17"
-                  f" -D_GLIBCXX_USE_CXX11_ABI={cxx11_abi}")
+        # If cmake is available on the system, use it to compile the dynamic library
+        if platform.system() != "Windows" and shutil.which("gcc"):
+            # If cmake is not installed, fall back to manual compilation using gcc (previous implementation)
+            soname = 'install_name' if platform.system() == 'Darwin' else 'soname'
+            cxx11_abi = 1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0
+            link_libl4casadi = " -ll4casadi" if not self.naive else ""
+            os_cmd = ("gcc"
+                    " -fPIC -shared"
+                    f" {self.build_dir / self.name}.cpp"
+                    f" -o {self.build_dir / f'lib{self.name}'}{dynamic_lib_file_ending()}"
+                    f" -I{include_dir} -L{lib_dir}"
+                    f" -Wl,-{soname},{dynamic_lib_file_starting()}{self.name}{dynamic_lib_file_ending()}"
+                    f"{link_libl4casadi}"
+                    " -lstdc++ -std=c++17"
+                    f" -D_GLIBCXX_USE_CXX11_ABI={cxx11_abi}")
 
+        elif shutil.which("cmake"):
+            # get current working dir as posix
+            cwd = pathlib.Path('.').absolute()
+
+            linked_lib = f"target_link_libraries({self.name} l4casadi)" if not self.naive else ""
+            glibcxx_use_cxx11_abi = (
+                "" 
+                if platform.system == "Windows" else 
+                f"add_definitions(-D_GLIBCXX_USE_CXX11_ABI={1 if torch._C._GLIBCXX_USE_CXX11_ABI else 0})"
+            )
+            
+            cmake_content = f"""
+                cmake_minimum_required(VERSION 3.15)
+                project({self.name})
+                set(CMAKE_CXX_STANDARD 17)
+                set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+                
+                include_directories({include_dir.as_posix()})
+                link_directories({lib_dir.as_posix()})
+
+                add_library({self.name} SHARED {self.name}.cpp)
+                {linked_lib}
+                
+                set_target_properties({self.name} PROPERTIES
+                    LIBRARY_OUTPUT_DIRECTORY {(cwd / self.build_dir).as_posix()}
+                    RUNTIME_OUTPUT_DIRECTORY {(cwd / self.build_dir).as_posix()}
+                )
+                {glibcxx_use_cxx11_abi}
+
+                install(TARGETS {self.name} DESTINATION {(cwd / self.build_dir).as_posix()})
+            """
+            with open(self.build_dir / "CMakeLists.txt", "w") as f:
+                f.write(cmake_content)  
+
+            os_cmd = (
+                f"cmake -S {self.build_dir} -B {self.build_dir} -DCMAKE_RULE_MESSAGES=OFF && "
+                f"cmake --build {self.build_dir} --config=Release"
+            )
+            os_cmd += f"&&  cmake --install {self.build_dir} --config=Release" if platform.system() == "Windows" else ""
+        else:
+            raise RuntimeError("Please install gcc (Linux and Mac) or cmake (Windows, Linux and Mac) to compile the dynamic library.")
+            
         status = os.system(os_cmd)
         if status != 0:
             raise Exception(f'Compilation failed!\n\nAttempted to execute OS command:\n{os_cmd}\n\n')

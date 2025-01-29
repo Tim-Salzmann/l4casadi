@@ -17,13 +17,13 @@ except ImportError:
 
 
 def compile_hook(manifest):
-    lib = manifest[0]
     file_path = pathlib.Path(__file__).parent.resolve()
     (file_path / 'l4casadi' / 'lib').mkdir(exist_ok=True)
     (file_path / 'l4casadi' / 'include').mkdir(exist_ok=True)
 
     # Copy lib
-    shutil.copy(lib, file_path / 'l4casadi' / 'lib')
+    for lib in manifest:
+        shutil.copy(lib, file_path / 'l4casadi' / 'lib')
 
     # Copy Header
     shutil.copy(file_path / 'libl4casadi' / 'include' / 'l4casadi.hpp', file_path / 'l4casadi' / 'include')
@@ -39,6 +39,7 @@ setup(
         'lib/**.dylib',
         'lib/**.so',
         'lib/**.dll',
+        'lib/**.lib',
         'include/**.hpp',
         'template_generation/templates/casadi_function.in.cpp'
     ]},
