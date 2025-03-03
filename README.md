@@ -52,13 +52,19 @@ Torch developers.)
 ## Table of Content
 - [Projects using L4CasADi](#projects-using-l4casadi)
 - [Installation](#installation)
+    - [Prerequisites](#prerequisites)
+    - [Windows Installation](#windows-installation)
+    - [Pip Install (CPU Only)](#pip-install-cpu-only)
+    - [From Source (CPU Only)](#from-source-cpu-only)
+    - [GPU (CUDA)](#gpu-cuda)
 - [Quick Start](#quick-start)
 - [Online Learning](#online-learning-and-updating)
 - [Naive L4CasADi](#naive-l4casadi) - Use this for small Multi Layer Perceptron Models.
 - [Real-time L4CasADi](#real-time-l4casadi) - Use this for fast MPC with Acados.
 - [Examples](#examples)
 
-If you use this framework please cite the following two paper
+If you use this framework please cite the following two papers:
+
 ```
 @article{salzmann2023neural,
   title={Real-time Neural-MPC: Deep Learning Model Predictive Control for Quadrotors and Agile Robotic Platforms},
@@ -93,9 +99,22 @@ If your project is using L4CasADi and you would like to be featured here, please
 ### Prerequisites
 Independently if you install from source or via pip you will need to meet the following requirements:
 
-- Working build system: CMake compatible C++ compiler (GCC version 10 or higher).
+- Working build system: CMake compatible C++ compiler.
+    - **On Linux/macOS:** GCC version 10 or higher is recommended.
+    - **On Windows:** You must install CMake and **Visual C++ Build Tools** (do not use a GCC compiler).
 - PyTorch (`>=2.0`) installation in your python environment.\
 `python -c "import torch; print(torch.__version__)"`
+
+### Windows Installation
+
+For users installing on Windows, please ensure the following steps are taken:
+
+1. **Install CMake and Visual C++ Build Tools:**
+Download and install [CMake](https://cmake.org/download/) and the [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+2. **Ensure Tools Are on Your PATH:**
+Make sure both CMake and the Visual C++ Build Tools are added to your system's PATH. This can be done either via the installers (by selecting the option to update the PATH) or manually.
+3. **Mind the File Path Length:**
+When building the L4CasADi model, ensure that the directory path does not exceed Windows’ maximum character limit. Long paths might lead to build issues, so choose a directory with a short path if possible.
 
 ### Pip Install (CPU Only)
 - Ensure Torch CPU-version is installed\
