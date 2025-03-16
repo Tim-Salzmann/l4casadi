@@ -407,7 +407,7 @@ class L4CasADi(object):
 
         return make_fx(functionalize(_vjp, remove='mutations_and_views'))(p_d, t_d)
 
-    def _trace_jac_adj1_model(self):
+    def _trace_jac_adj1_p_model(self):
         p_d = torch.zeros(self._input_shape).to(self.device)
         t_d = torch.zeros(self._output_shape).to(self.device)
 
@@ -417,10 +417,25 @@ class L4CasADi(object):
         # TODO: replace jacfwd with jacrev depending on answer in https://github.com/pytorch/pytorch/issues/130735
         if self.batched:
             def with_batch_dim(p, x):
-                return torch.func.vmap(jacfwd(_vjp))(p[:, None], x[:, None])[:, 0].permute(3, 2, 0, 1)
+                return torch.func.vmap(jacfwd(_vjp, argnums=0))(p[:, None], x[:, None])[:, 0].permute(3, 2, 0, 1)
 
             return make_fx(functionalize(with_batch_dim, remove='mutations_and_views'))(p_d, t_d)
-        return make_fx(functionalize(jacfwd(_vjp), remove='mutations_and_views'))(p_d, t_d)
+        return make_fx(functionalize(jacfwd(_vjp, argnums=0), remove='mutations_and_views'))(p_d, t_d)
+
+    def _trace_jac_adj1_t_model(self):
+        p_d = torch.zeros(self._input_shape).to(self.device)
+        t_d = torch.zeros(self._output_shape).to(self.device)
+
+        def _vjp(p, x):
+            return vjp(self.model, p)[1](x)[0]
+
+        # TODO: replace jacfwd with jacrev depending on answer in https://github.com/pytorch/pytorch/issues/130735
+        if self.batched:
+            def with_batch_dim(p, x):
+                return torch.func.vmap(jacfwd(_vjp, argnums=1))(p[:, None], x[:, None])[:, 0].permute(3, 2, 0, 1)
+
+            return make_fx(functionalize(with_batch_dim, remove='mutations_and_views'))(p_d, t_d)
+        return make_fx(functionalize(jacfwd(_vjp, argnums=1), remove='mutations_and_views'))(p_d, t_d)
 
     def _trace_hess_model(self, inp):
         if self.batched:
@@ -465,12 +480,21 @@ class L4CasADi(object):
 
         exported_jac_adj1 = False
         if self._generate_jac_adj1:
-            jac_adj1_model = self._trace_jac_adj1_model()
-            exported_jac_adj1 = self.model_compile(
-                jac_adj1_model,
-                (out_folder / f'jac_adj1_{self.name}.pt').as_posix(),
+            jac_adj1_p_model = self._trace_jac_adj1_p_model()
+            exported_jac_adj1_p = self.model_compile(
+                jac_adj1_p_model,
+                (out_folder / f'jac_adj1_p_{self.name}.pt').as_posix(),
                 (d_inp, d_out)
             )
+
+            jac_adj1_t_model = self._trace_jac_adj1_t_model()
+            exported_jac_adj1_t = self.model_compile(
+                jac_adj1_t_model,
+                (out_folder / f'jac_adj1_t_{self.name}.pt').as_posix(),
+                (d_inp, d_out)
+            )
+
+            exported_jac_adj1 = exported_jac_adj1_p and exported_jac_adj1_t
 
         exported_hess = False
         if self._generate_jac_jac:

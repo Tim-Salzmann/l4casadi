@@ -266,7 +266,7 @@ def import_l4casadi_model(device):
     x = cs.MX.sym("x", 3)
     xn = (x - meanX) / stdX
 
-    y = l4c.L4CasADi(model, name="turbulent_model", generate_adj1=False, generate_jac_jac=True)(xn.T).T
+    y = l4c.L4CasADi(model, name="turbulent_model")(xn.T).T
     y = y * stdY + meanY
     fU = cs.Function("fU", [x], [y[0]])
     fV = cs.Function("fV", [x], [y[1]])

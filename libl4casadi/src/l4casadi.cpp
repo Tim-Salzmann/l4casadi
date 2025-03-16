@@ -54,7 +54,8 @@ public:
     virtual torch::Tensor forward(torch::Tensor) = 0;
     virtual torch::Tensor jac(torch::Tensor) = 0;
     virtual torch::Tensor adj1(torch::Tensor, torch::Tensor) = 0;
-    virtual torch::Tensor jac_adj1(torch::Tensor, torch::Tensor) = 0;
+    virtual torch::Tensor jac_adj1_p(torch::Tensor, torch::Tensor) = 0;
+    virtual torch::Tensor jac_adj1_t(torch::Tensor, torch::Tensor) = 0;
     virtual torch::Tensor hess(torch::Tensor) = 0;
 
     virtual ~L4CasADiImpl() = default;
@@ -66,7 +67,8 @@ class L4CasADi::L4CasADiCompiledImpl : public L4CasADi::L4CasADiImpl
     std::unique_ptr<torch::inductor::AOTIModelContainerRunner> forward_model;
     std::unique_ptr<torch::inductor::AOTIModelContainerRunner> jac_model;
     std::unique_ptr<torch::inductor::AOTIModelContainerRunner> adj1_model;
-    std::unique_ptr<torch::inductor::AOTIModelContainerRunner> jac_adj1_model;
+    std::unique_ptr<torch::inductor::AOTIModelContainerRunner> jac_adj1_p_model;
+    std::unique_ptr<torch::inductor::AOTIModelContainerRunner> jac_adj1_t_model;
     std::unique_ptr<torch::inductor::AOTIModelContainerRunner> hess_model;
 
     std::mutex model_update_mutex;
@@ -113,16 +115,20 @@ public:
         }
 
         if (this->has_jac_adj1) {
-            std::filesystem::path jac_adj1_model_file ("jac_adj1_" + this->function_name + ".so");
+            std::filesystem::path jac_adj1_p_model_file ("jac_adj1_p_" + this->function_name + ".so");
+            std::filesystem::path jac_adj1_t_model_file ("jac_adj1_t_" + this->function_name + ".so");
 #if USE_CUDA
             if (this-> device == cpu) {
-                 this->jac_adj1_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCpu>((dir / jac_adj1_model_file).generic_string());
+                 this->jac_adj1_p_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCpu>((dir / jac_adj1_p_model_file).generic_string());
+                 this->jac_adj1_t_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCpu>((dir / jac_adj1_t_model_file).generic_string());
             }
             else {
-                this->jac_adj1_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCuda>((dir / jac_adj1_model_file).generic_string());
+                this->jac_adj1_p_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCuda>((dir / jac_adj1_p_model_file).generic_string());
+                this->jac_adj1_t_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCuda>((dir / jac_adj1_t_model_file).generic_string());
             }
 #else
-            this->jac_adj1_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCpu>((dir / jac_adj1_model_file).generic_string());
+            this->jac_adj1_p_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCpu>((dir / jac_adj1_model_p_file).generic_string());
+            this->jac_adj1_t_model = std::make_unique<torch::inductor::AOTIModelContainerRunnerCpu>((dir / jac_adj1_model_t_file).generic_string());
 #endif
         }
 
@@ -181,13 +187,22 @@ public:
         return this->adj1_model->run(inputs)[0].to(cpu);
     }
 
-    torch::Tensor jac_adj1(torch::Tensor primal, torch::Tensor tangent){
+    torch::Tensor jac_adj1_p(torch::Tensor primal, torch::Tensor tangent){
         std::unique_lock<std::mutex> lock(this->model_update_mutex);
         c10::InferenceMode guard;
         std::vector<torch::Tensor> inputs;
         inputs.push_back(primal.to(this->device));
         inputs.push_back(tangent.to(this->device));
-        return this->jac_adj1_model->run(inputs)[0].to(cpu);
+        return this->jac_adj1_p_model->run(inputs)[0].to(cpu);
+    }
+
+    torch::Tensor jac_adj1_t(torch::Tensor primal, torch::Tensor tangent){
+        std::unique_lock<std::mutex> lock(this->model_update_mutex);
+        c10::InferenceMode guard;
+        std::vector<torch::Tensor> inputs;
+        inputs.push_back(primal.to(this->device));
+        inputs.push_back(tangent.to(this->device));
+        return this->jac_adj1_t_model->run(inputs)[0].to(cpu);
     }
 
     torch::Tensor hess(torch::Tensor x) {
@@ -206,7 +221,8 @@ class L4CasADi::L4CasADiScriptedImpl : public L4CasADi::L4CasADiImpl
     torch::jit::script::Module adj1_model;
     torch::jit::script::Module forward_model;
     torch::jit::script::Module jac_model;
-    torch::jit::script::Module jac_adj1_model;
+    torch::jit::script::Module jac_adj1_p_model;
+    torch::jit::script::Module jac_adj1_t_model;
     torch::jit::script::Module hess_model;
 
     std::thread online_model_reloader_thread;
@@ -264,11 +280,17 @@ public:
         }
 
         if (this->has_jac_adj1) {
-            std::filesystem::path jac_adj1_model_file ("jac_adj1_" + this->function_name + ".pt");
-            this->jac_adj1_model = torch::jit::load((dir / jac_adj1_model_file).generic_string());
-            this->jac_adj1_model.to(this->device);
-            this->jac_adj1_model.eval();
-            this->jac_adj1_model = torch::jit::optimize_for_inference(this->jac_adj1_model);
+            std::filesystem::path jac_adj1_p_model_file ("jac_adj1_p_" + this->function_name + ".pt");
+            this->jac_adj1_p_model = torch::jit::load((dir / jac_adj1_p_model_file).generic_string());
+            this->jac_adj1_p_model.to(this->device);
+            this->jac_adj1_p_model.eval();
+            this->jac_adj1_p_model = torch::jit::optimize_for_inference(this->jac_adj1_p_model);
+
+            std::filesystem::path jac_adj1_t_model_file ("jac_adj1_t_" + this->function_name + ".pt");
+            this->jac_adj1_t_model = torch::jit::load((dir / jac_adj1_t_model_file).generic_string());
+            this->jac_adj1_t_model.to(this->device);
+            this->jac_adj1_t_model.eval();
+            this->jac_adj1_t_model = torch::jit::optimize_for_inference(this->jac_adj1_p_model);
         }
 
         if (this->has_jac) {
@@ -314,14 +336,24 @@ public:
         return this->adj1_model.forward(inputs).toTensor().to(cpu);
     }
 
-    torch::Tensor jac_adj1(torch::Tensor primal, torch::Tensor tangent){
+    torch::Tensor jac_adj1_p(torch::Tensor primal, torch::Tensor tangent){
         std::unique_lock<std::mutex> lock(this->model_update_mutex);
         c10::InferenceMode guard;
         std::vector<torch::jit::IValue> inputs;
         inputs.push_back(primal.to(this->device));
         inputs.push_back(tangent.to(this->device));
 
-        return this->jac_adj1_model.forward(inputs).toTensor().to(cpu);
+        return this->jac_adj1_p_model.forward(inputs).toTensor().to(cpu);
+    }
+
+    torch::Tensor jac_adj1_t(torch::Tensor primal, torch::Tensor tangent){
+        std::unique_lock<std::mutex> lock(this->model_update_mutex);
+        c10::InferenceMode guard;
+        std::vector<torch::jit::IValue> inputs;
+        inputs.push_back(primal.to(this->device));
+        inputs.push_back(tangent.to(this->device));
+
+        return this->jac_adj1_t_model.forward(inputs).toTensor().to(cpu);
     }
 
     torch::Tensor hess(torch::Tensor x) {
@@ -373,14 +405,25 @@ void L4CasADi::adj1(const double* p, const double* t, double* out) {
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
 }
 
-void L4CasADi::jac_adj1(const double* p, const double* t, double* out) {
+void L4CasADi::jac_adj1_p(const double* p, const double* t, double* out) {
     // jac_adj1 [i0, out_o0, adj_o0, out_adj_i0] -> [jac_adj_i0_i0, jac_adj_i0_out_o0, jac_adj_i0_adj_o0]
     torch::Tensor p_tensor, t_tensor;
     p_tensor = torch::from_blob(( void * )p, {this->cols_in, this->rows_in}, at::kDouble).to(torch::kFloat).permute({1, 0});
     t_tensor = torch::from_blob(( void * )t, {this->cols_out, this->rows_out}, at::kDouble).to(torch::kFloat).permute({1, 0});
 
     // CasADi expects the return in Fortran order -> Transpose last two dimensions
-    torch::Tensor out_tensor = this->pImpl->jac_adj1(p_tensor, t_tensor).to(torch::kDouble).permute({3, 2, 1, 0}).contiguous();
+    torch::Tensor out_tensor = this->pImpl->jac_adj1_p(p_tensor, t_tensor).to(torch::kDouble).permute({3, 2, 1, 0}).contiguous();
+    std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
+}
+
+void L4CasADi::jac_adj1_t(const double* p, const double* t, double* out) {
+    // jac_adj1 [i0, out_o0, adj_o0, out_adj_i0] -> [jac_adj_i0_i0, jac_adj_i0_out_o0, jac_adj_i0_adj_o0]
+    torch::Tensor p_tensor, t_tensor;
+    p_tensor = torch::from_blob(( void * )p, {this->cols_in, this->rows_in}, at::kDouble).to(torch::kFloat).permute({1, 0});
+    t_tensor = torch::from_blob(( void * )t, {this->cols_out, this->rows_out}, at::kDouble).to(torch::kFloat).permute({1, 0});
+
+    // CasADi expects the return in Fortran order -> Transpose last two dimensions
+    torch::Tensor out_tensor = this->pImpl->jac_adj1_t(p_tensor, t_tensor).to(torch::kDouble).permute({3, 2, 1, 0}).contiguous();
     std::memcpy(out, out_tensor.data_ptr<double>(), out_tensor.numel() * sizeof(double));
 }
 

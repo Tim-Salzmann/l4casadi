@@ -109,13 +109,13 @@ CASADI_SYMBOL_EXPORT int jac_adj1_{{ name }}(const casadi_real** arg, casadi_rea
   if (res[1] != NULL) {
     l4casadi.invalid_argument("jac_adj_i0_out_o0 is not provided by L4CasADi. If you need this feature, please contact the L4CasADi developer.");
   }
+  if (res[0] != NULL) {
+    l4casadi.jac_adj1_p(arg[0], arg[2], res[0]);
+  }
   if (res[2] != NULL) {
-    l4casadi.invalid_argument("jac_adj_i0_adj_o0 is not provided by L4CasADi. If you need this feature, please contact the L4CasADi developer.");
+    l4casadi.jac_adj1_t(arg[0], arg[2], res[0]);
   }
-  if (res[0] == NULL) {
-    l4casadi.invalid_argument("L4CasADi can only provide jac_adj_i0_i0 for jac_adj1_{{ name }} function. If you need this feature, please contact the L4CasADi developer.");
-  }
-  l4casadi.jac_adj1(arg[0], arg[2], res[0]);
+
   return 0;
 }
 

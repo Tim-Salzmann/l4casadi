@@ -19,7 +19,8 @@ public:
     void forward(const double*, double*);
     void jac(const double*, double*);
     void adj1(const double*, const double*, double*);
-    void jac_adj1(const double*, const double*, double*);
+    void jac_adj1_p(const double*, const double*, double*);
+    void jac_adj1_t(const double*, const double*, double*);
     void jac_jac(const double*, double*);
 
     void invalid_argument(std::string);
