@@ -113,7 +113,7 @@ CASADI_SYMBOL_EXPORT int jac_adj1_{{ name }}(const casadi_real** arg, casadi_rea
     l4casadi.jac_adj1_p(arg[0], arg[2], res[0]);
   }
   if (res[2] != NULL) {
-    l4casadi.jac_adj1_t(arg[0], arg[2], res[0]);
+    l4casadi.jac_adj1_t(arg[0], arg[2], res[2]);
   }
 
   return 0;
