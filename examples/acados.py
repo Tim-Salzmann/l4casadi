@@ -46,7 +46,7 @@ class DoubleIntegratorWithLearnedDynamics:
         x = cs.vertcat(s, s_dot)
         x_dot = cs.vertcat(s_dot, s_dot_dot)
 
-        res_model = self.learned_dyn(x)
+        res_model = self.learned_dyn(x.T).T
 
         f_expl = cs.vertcat(
             s_dot,
@@ -174,7 +174,7 @@ class MPC:
 
 def run():
     N = 10
-    learned_dyn_model = l4c.L4CasADi(MultiLayerPerceptron(), model_expects_batch_dim=True, name='learned_dyn')
+    learned_dyn_model = l4c.L4CasADi(MultiLayerPerceptron(), name='learned_dyn')
 
     model = DoubleIntegratorWithLearnedDynamics(learned_dyn_model)
     solver = MPC(model=model.model(), N=N,
