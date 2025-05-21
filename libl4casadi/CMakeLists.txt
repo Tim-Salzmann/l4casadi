@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 project(L4CasADi)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
