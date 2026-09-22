@@ -176,7 +176,7 @@ def main():
         strict=False,
     )
     # -------------------------- Create L4CasADi Module -------------------------- #
-    l4c_nerf = l4c.L4CasADi(model, scripting=False)
+    l4c_nerf = l4c.L4CasADi(model, scripting=True)
 
     # ---------------------------------------------------------------------------- #
     #                                   NLP warmup                                   #
